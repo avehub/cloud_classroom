@@ -138,11 +138,14 @@ class Vod extends Service
             if (!empty($list)) {
                 $result = [];
                 foreach ($list as $file) {
-                    $url = $file['MainPlayUrl'] ?? '';
-                    if (empty($url)) continue;
+                    $rawUrl = $file['MainPlayUrl'] ?? '';
+                    if (empty($rawUrl)) continue;
+
+                    // 剥离 URL 中的动态临时参数与 auth_key，保持纯净的基础播放地址用于持久化
+                    $cleanUrl = $this->getCleanPlayUrl($rawUrl);
 
                     $result[] = [
-                        'url' => $url,
+                        'url' => $cleanUrl,
                         'width' => $file['Width'] ?? 0,
                         'height' => $file['Height'] ?? 0,
                         'definition' => $file['Definition'] ?? '',
@@ -184,6 +187,36 @@ class Vod extends Service
     }
 
     /**
+     * 剥离 URL 中的动态临时参数（保留纯净地址持久化）
+     *
+     * @param string $url
+     * @return string
+     */
+    public function getCleanPlayUrl($url)
+    {
+        if (empty($url)) return '';
+
+        $parsed = parse_url($url);
+        $scheme = $parsed['scheme'] ?? 'http';
+        $host = $parsed['host'] ?? '';
+        $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+        $path = $parsed['path'] ?? '';
+
+        $cleanUrl = "{$scheme}://{$host}{$port}{$path}";
+
+        // 保留非鉴权的基础参数（如有）
+        if (!empty($parsed['query'])) {
+            parse_str($parsed['query'], $queryArr);
+            unset($queryArr['auth_key']);
+            if (!empty($queryArr)) {
+                $cleanUrl .= '?' . http_build_query($queryArr);
+            }
+        }
+
+        return $cleanUrl;
+    }
+
+    /**
      * 获取播放信息
      *
      * @param string $fileId
@@ -195,7 +228,7 @@ class Vod extends Service
     }
 
     /**
-     * 获取播放地址 (支持火山引擎 URL 鉴权 A 类型签名)
+     * 获取播放地址 (动态应用后台配置的协议并生成实时有效 A 类防盗链签名)
      *
      * @param string $url
      * @return string
@@ -204,26 +237,47 @@ class Vod extends Service
     {
         if (empty($url)) return '';
 
-        // 如果 URL 中已包含 auth_key（火山官方 GetPlayInfo 接口已自带完整防盗链签名），直接返回避免重复签名
-        if (strpos($url, 'auth_key=') !== false) {
-            return (string)$url;
+        $parsed = parse_url($url);
+        $host = $parsed['host'] ?? '';
+        $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
+        $path = $parsed['path'] ?? '';
+
+        // 1. 动态对齐后台配置的分发协议 (http / https)
+        $protocol = $this->settings['protocol'] ?: 'http';
+
+        // 2. 动态对齐后台配置的自定义分发域名 (如配置了自定义加速域名)
+        if (!empty($this->settings['domain'])) {
+            $customDomain = trim($this->settings['domain']);
+            $customDomain = str_replace(['http://', 'https://'], '', $customDomain);
+            if (!empty($customDomain)) {
+                $host = $customDomain;
+            }
         }
 
-        // 如果未开启防盗链或未设置鉴权 Key，直接返回原地址
+        // 3. 过滤剥离可能残留的旧 auth_key
+        $queryArr = [];
+        if (!empty($parsed['query'])) {
+            parse_str($parsed['query'], $queryArr);
+            unset($queryArr['auth_key']);
+        }
+
+        $basePlayUrl = "{$protocol}://{$host}{$port}{$path}";
+        if (!empty($queryArr)) {
+            $basePlayUrl .= '?' . http_build_query($queryArr);
+        }
+
+        // 4. 若未开启防盗链或未设置 Key，直接返回最新协议+域名的播放地址
         if (empty($this->settings['key_anti_enabled']) || empty($this->settings['key_anti_key'])) {
-            return (string)$url;
+            return $basePlayUrl;
         }
 
+        // 5. 实时生成最新 A 类签名（保证每次访问均有完整有效时长）
         $key = $this->settings['key_anti_key'];
         $expiry = (int)($this->settings['key_anti_expiry'] ?: 1800);
         $timestamp = time() + $expiry; // 十进制 Unix 时间戳
-        $rand = '0'; // 随机串，通常为0或随机字符串
-        $uid = '0';  // 用户ID，通常为0
+        $rand = '0'; // 随机串
+        $uid = '0';  // 用户ID
 
-        $parsed = parse_url($url);
-        $path = $parsed['path'] ?? '';
-
-        // 火山引擎 A 类型签名算法：
         // 签名串 S = Path-Timestamp-Rand-Uid-PrivateKey
         // HashValue = md5(S)
         // 鉴权参数 auth_key = Timestamp-Rand-Uid-HashValue
@@ -231,9 +285,9 @@ class Vod extends Service
         $hashValue = md5($signStr);
         $authKey = sprintf('%d-%s-%s-%s', $timestamp, $rand, $uid, $hashValue);
 
-        $delimiter = (strpos($url, '?') !== false) ? '&' : '?';
+        $delimiter = (strpos($basePlayUrl, '?') !== false) ? '&' : '?';
 
-        return $url . $delimiter . 'auth_key=' . $authKey;
+        return $basePlayUrl . $delimiter . 'auth_key=' . $authKey;
     }
 
     /**

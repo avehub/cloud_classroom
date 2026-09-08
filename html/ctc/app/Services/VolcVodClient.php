@@ -281,9 +281,12 @@ class VolcVodClient extends Service
      */
     public function getPlayInfo($vid, $fileType = 'video')
     {
+        $protocol = $this->settings['protocol'] ?? 'http';
+        $ssl = ($protocol == 'https') ? '1' : '0';
+
         $params = [
             'Vid' => $vid,
-            'Ssl' => '1',
+            'Ssl' => $ssl,
         ];
 
         $result = $this->request('GetPlayInfo', $params, '2020-08-01', 'GET');

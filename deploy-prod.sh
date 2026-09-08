@@ -39,15 +39,16 @@ fi
 
 info "====== 2. 初始化持久化目录结构 ======"
 mkdir -p mysql/data mysql/log
-mkdir -p redis/data 
+mkdir -p redis/data redis/log
 mkdir -p xunsearch/data
 mkdir -p nginx/log nginx/ssl
 mkdir -p php/log php/supervisor/log
-mkdir -p html/ctc/storage/cache html/ctc/storage/log html/ctc/storage/tmp html/ctc/storage/upload
+mkdir -p html/ctc/storage/cache html/ctc/storage/cache/annotations html/ctc/storage/cache/volt html/ctc/storage/cache/metadata
+mkdir -p html/ctc/storage/log html/ctc/storage/tmp html/ctc/storage/upload
 
 # 添加 .gitkeep 保持目录结构
 touch mysql/data/.gitkeep mysql/log/.gitkeep
-touch redis/data/.gitkeep xunsearch/data/.gitkeep
+touch redis/data/.gitkeep redis/log/.gitkeep xunsearch/data/.gitkeep
 touch nginx/log/.gitkeep php/log/.gitkeep php/supervisor/log/.gitkeep
 
 info "====== 3. 修复目录权限 (适配容器内部 UID/GID) ======"
@@ -59,20 +60,24 @@ info "====== 3. 修复目录权限 (适配容器内部 UID/GID) ======"
 if [ "$(uname -s)" = "Linux" ]; then
     if [ "${EUID}" -eq 0 ]; then
         chown -R 999:999 mysql/data mysql/log || true
-        chown -R 999:999 redis/data || true
+        chown -R 999:999 redis/data redis/log || true
+        chmod -R 777 redis/log || true
         chown -R 33:33 html/ctc/storage || true
-        chmod -R 775 html/ctc/storage || true
-        success "已通过 root 权限修复数据目录属主！"
+        chmod -R 777 html/ctc/storage || true
+        chmod -R 777 nginx/log || true
+        success "已通过 root 权限修复数据及日志目录属主！"
     else
         warn "当前非 root 用户执行，尝试使用 sudo 修正容器持久化目录权限..."
         if command -v sudo &>/dev/null; then
             sudo chown -R 999:999 mysql/data mysql/log 2>/dev/null || true
-            sudo chown -R 999:999 redis/data 2>/dev/null || true
+            sudo chown -R 999:999 redis/data redis/log 2>/dev/null || true
+            sudo chmod -R 777 redis/log 2>/dev/null || true
             sudo chown -R 33:33 html/ctc/storage 2>/dev/null || true
-            sudo chmod -R 775 html/ctc/storage 2>/dev/null || true
+            sudo chmod -R 777 html/ctc/storage 2>/dev/null || true
+            sudo chmod -R 777 nginx/log 2>/dev/null || true
             success "数据目录权限已修复！"
         else
-            warn "未能获取 sudo 权限，若容器启动报权限不足，请执行：sudo chown -R 999:999 mysql/data redis/data && sudo chown -R 33:33 html/ctc/storage"
+            warn "未能获取 sudo 权限，建议执行：sudo chmod -R 777 redis/log html/ctc/storage"
         fi
     fi
 fi
@@ -94,10 +99,22 @@ if [ $RETRIES -eq 0 ]; then
 fi
 success "MySQL 服务已就绪！"
 
-info "====== 6. 执行应用依赖与数据库迁移 (Phinx) ======"
-docker compose exec -T --user www-data php bash -c "cd /var/www/html/ctc && composer dump-autoload --optimize" || true
-docker compose exec -T --user www-data php bash -c "cd /var/www/html/ctc && vendor/bin/phinx migrate" || true
-docker compose exec -T --user www-data php bash -c "cd /var/www/html/ctc && php console.php upgrade" || true
+info "====== 6. 检查并自动安装 PHP 依赖与数据库迁移 ======"
+# 检查 vendor 目录是否存在，若不存在则自动执行 composer install
+if [ ! -d "html/ctc/vendor" ] || [ ! -f "html/ctc/vendor/autoload.php" ]; then
+    info "未检测到 vendor 依赖，正在容器内配置国内镜像并安装 Composer 依赖..."
+    docker compose exec -T -w /var/www/html/ctc php composer config -g repo.packagist composer https://mirrors.aliyun.com/composer/ || true
+    docker compose exec -T -w /var/www/html/ctc php composer install --no-dev --prefer-dist --optimize-autoloader
+    success "Composer 依赖安装完成！"
+else
+    docker compose exec -T -w /var/www/html/ctc php composer dump-autoload --optimize || true
+fi
+
+info "执行数据库结构迁移 (Phinx)..."
+docker compose exec -T -w /var/www/html/ctc php php vendor/bin/phinx migrate -c phinx.php || true
+
+info "执行系统升级与默认配置同步..."
+docker compose exec -T -w /var/www/html/ctc php php console.php upgrade || true
 
 info "====== 7. 重建全文检索索引 (XunSearch) ======"
 docker compose exec -T --user www-data php bash -c "cd /var/www/html/ctc && php console.php course_index rebuild" || true
