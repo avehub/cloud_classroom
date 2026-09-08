@@ -19,6 +19,14 @@ server {
         try_files $uri $uri/ /index.php?_url=$uri&$args;
     }
 
+    # 本地存储文件目录（html/ctc/storage/upload）
+    location ^~ /storage/upload/ {
+        alias /var/www/html/ctc/storage/upload/;
+        expires max;
+        log_not_found off;
+        access_log off;
+    }
+
     location ~ \.php$ {
 
         include fastcgi_params;
