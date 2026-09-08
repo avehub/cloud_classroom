@@ -32,3 +32,14 @@
 /html/ctc/storage/log 
 /html/ctc/storage/tmp 
 /html/ctc/storage/upload
+/html/ctc/vendor
+/html/ctc/config/xs.course.ini
+/html/ctc/config/xs.article.ini
+/html/ctc/config/xs.question.ini
+/html/ctc/config/alipay/*.crt
+/html/ctc/config/wxpay/*.pem
+/html/ctc/db/migrations/schema.php
+/html/ctc/public/robots.txt
+/html/ctc/public/sitemap.xml
+/html/ctc/public/h5
+/html/ctc/storage/cache/purifier
