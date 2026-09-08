@@ -13,6 +13,8 @@ server {
 
     server_name ctc.docker;
 
+    set $base_dir /var/www;
+
     ssl_certificate /etc/nginx/ssl/ctc.docker.crt;
     ssl_certificate_key /etc/nginx/ssl/ctc.docker.key;
     ssl_session_timeout 20m;
@@ -21,7 +23,7 @@ server {
     ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE:ECDH:AES:HIGH:!NULL:!aNULL:!MD5:!ADH:!RC4;
     ssl_prefer_server_ciphers on;
 
-    root /var/www/html/ctc/public;
+    root $base_dir/html/ctc/public;
     index index.php index.html index.htm;
     charset utf-8;
 
@@ -38,7 +40,7 @@ server {
 
     # 本地存储文件目录（html/ctc/storage/upload）
     location ^~ /storage/upload/ {
-        alias /var/www/html/ctc/storage/upload/;
+        alias $base_dir/html/ctc/storage/upload/;
         expires max;
         log_not_found off;
         access_log off;
