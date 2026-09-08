@@ -20,11 +20,11 @@ class KooguaController extends \Phalcon\Mvc\Controller
     {
         $url = 'https://www.gaodekuai.cn/page/wiki';
 
-        $this->response->redirect($url, true);
-    
+        return $this->response->redirect($url, true);
+    }
 
     /**
-     * @Get("/community", name="admin.gaodekuai.cnmunity")
+     * @Get("/community", name="admin.gaodekuai.community")
      */
     public function communityAction()
     {
