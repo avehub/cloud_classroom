@@ -1,6 +1,5 @@
 /.idea
 /.env
-/html
 /install.sh
 /install-v2.sh
 /upgrade.sh
@@ -29,3 +28,7 @@
 /getPostnt.
 /request-
 .DS_Store
+/html/ctc/storage/cache 
+/html/ctc/storage/log 
+/html/ctc/storage/tmp 
+/html/ctc/storage/upload

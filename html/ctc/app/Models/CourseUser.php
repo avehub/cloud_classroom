@@ -1,0 +1,122 @@
+<?php
+
+
+namespace App\Models;
+
+class CourseUser extends Model
+{
+
+    /**
+     * 主键编号
+     *
+     * @var int
+     */
+    public $id = 0;
+
+    /**
+     * 课程编号
+     *
+     * @var int
+     */
+    public $course_id = 0;
+
+    /**
+     * 用户编号
+     *
+     * @var int
+     */
+    public $user_id = 0;
+
+    /**
+     * 计划编号
+     *
+     * @var int
+     */
+    public $plan_id = 0;
+
+    /**
+     * 来源类型
+     *
+     * @var int
+     */
+    public $source_type = 0;
+
+    /**
+     * 过期时间
+     *
+     * @var int
+     */
+    public $expiry_time = 0;
+
+    /**
+     * 学习时长（秒）
+     *
+     * @var int
+     */
+    public $duration = 0;
+
+    /**
+     * 学习进度（％）
+     *
+     * @var int
+     */
+    public $progress = 0;
+
+    /**
+     * 评价标识
+     *
+     * @var int
+     */
+    public $reviewed = 0;
+
+    /**
+     * 删除标识
+     *
+     * @var int
+     */
+    public $deleted = 0;
+
+    /**
+     * 活跃时间
+     *
+     * @var int
+     */
+    public $active_time = 0;
+
+    /**
+     * 创建时间
+     *
+     * @var int
+     */
+    public $create_time = 0;
+
+    /**
+     * 更新时间
+     *
+     * @var int
+     */
+    public $update_time = 0;
+
+    public function getSource(): string
+    {
+        return 'kg_course_user';
+    }
+
+    public function beforeCreate()
+    {
+        $this->plan_id = (int)date('Ymd');
+
+        $this->create_time = time();
+    }
+
+    public function beforeUpdate()
+    {
+        $this->update_time = time();
+    }
+
+    public static function sourceTypes()
+    {
+        return KgOwnership::sourceTypes();
+    }
+
+}

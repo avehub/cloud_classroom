@@ -1,0 +1,32 @@
+<?php
+
+
+$config = require __DIR__ . '/config/config.php';
+
+return [
+
+    'version_order' => 'creation',
+
+    'paths' => [
+        'migrations' => 'db/migrations',
+        'seeds' => 'db/seeds',
+    ],
+
+    'environments' => [
+
+        'default_migration_table' => 'kg_migration',
+
+        'default_environment' => 'production',
+
+        'production' => [
+            'adapter' => 'mysql',
+            'host' => $config['db']['host'],
+            'port' => $config['db']['port'],
+            'name' => $config['db']['dbname'],
+            'user' => $config['db']['username'],
+            'pass' => $config['db']['password'],
+            'charset' => $config['db']['charset'],
+        ],
+    ],
+
+];

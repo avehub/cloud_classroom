@@ -1,0 +1,41 @@
+{
+  "require": {
+    "ext-phalcon": "~3.4",
+    "ext-redis": "*",
+    "ext-pdo": "*",
+    "ext-json": "*",
+    "ext-fileinfo": "*",
+    "ext-gd": "*",
+    "phalcon/incubator": "^3.4",
+    "guzzlehttp/guzzle": "^6.5",
+    "swiftmailer/swiftmailer": "^6.0",
+    "peppeocchi/php-cron-scheduler": "^3.0",
+    "yansongda/pay": "^2.9",
+    "tencentcloud/tencentcloud-sdk-php": "^3.0",
+    "qcloud/cos-sdk-v5": "^2.5",
+    "workerman/gateway-worker": "^3.0",
+    "workerman/gatewayclient": "^3.0",
+    "whichbrowser/parser": "^2.0",
+    "hightman/xunsearch": "^1.4",
+    "robmorgan/phinx": "^0.12",
+    "overtrue/wechat": "^4.2",
+    "endroid/qr-code": "^3.9",
+    "ezyang/htmlpurifier": "^4.14",
+    "zoujingli/ip2region": "^2.0"
+  },
+  "require-dev": {
+    "odan/phinx-migrations-generator": "^5.3",
+    "phalcon/ide-stubs": "^3.4"
+  },
+  "repositories": {
+    "packagist": {
+      "type": "composer",
+      "url": "https://mirrors.aliyun.com/composer"
+    }
+  },
+  "config": {
+    "allow-plugins": {
+      "easywechat-composer/easywechat-composer": true
+    }
+  }
+}

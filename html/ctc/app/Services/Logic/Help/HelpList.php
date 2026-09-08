@@ -1,0 +1,55 @@
+<?php
+
+
+namespace App\Services\Logic\Help;
+
+use App\Caches\CategoryList as CategoryListCache;
+use App\Models\Category as CategoryModel;
+use App\Repos\Help as HelpRepo;
+use App\Services\Logic\Service as LogicService;
+
+class HelpList extends LogicService
+{
+
+    public function handle()
+    {
+        $cache = new CategoryListCache();
+
+        $categories = $cache->get(CategoryModel::TYPE_HELP);
+
+        $helpRepo = new HelpRepo();
+
+        $helps = $helpRepo->findAll([
+            'published' => 1,
+            'deleted' => 0,
+        ]);
+
+        $result = [];
+
+        foreach ($categories as $category) {
+
+            $item = [];
+
+            $item['category'] = [
+                'id' => $category['id'],
+                'name' => $category['name'],
+            ];
+
+            $item['helps'] = [];
+
+            foreach ($helps as $help) {
+                if ($help->category_id == $category['id']) {
+                    $item['helps'][] = [
+                        'id' => $help->id,
+                        'title' => $help->title,
+                    ];
+                }
+            }
+
+            $result[] = $item;
+        }
+
+        return $result;
+    }
+
+}

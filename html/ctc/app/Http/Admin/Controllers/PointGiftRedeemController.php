@@ -1,0 +1,52 @@
+<?php
+
+
+namespace App\Http\Admin\Controllers;
+
+use App\Http\Admin\Services\PointGiftRedeem as PointGiftRedeemService;
+
+/**
+ * @RoutePrefix("/admin/point/gift/redeem")
+ */
+class PointGiftRedeemController extends Controller
+{
+
+    /**
+     * @Get("/search", name="admin.point_gift_redeem.search")
+     */
+    public function searchAction()
+    {
+        $service = new PointGiftRedeemService();
+
+        $giftTypes = $service->getGiftTypes();
+        $statusTypes = $service->getStatusTypes();
+
+        $this->view->setVar('gift_types', $giftTypes);
+        $this->view->setVar('status_types', $statusTypes);
+    }
+
+    /**
+     * @Get("/list", name="admin.point_gift_redeem.list")
+     */
+    public function listAction()
+    {
+        $redeemService = new PointGiftRedeemService();
+
+        $pager = $redeemService->getRedeems();
+
+        $this->view->setVar('pager', $pager);
+    }
+
+    /**
+     * @Post("/{id:[0-9]+}/deliver", name="admin.point_gift_redeem.deliver")
+     */
+    public function deliverAction($id)
+    {
+        $redeemService = new PointGiftRedeemService();
+
+        $redeemService->deliver($id);
+
+        return $this->jsonSuccess(['msg' => '发货成功']);
+    }
+
+}

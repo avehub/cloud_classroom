@@ -1,0 +1,44 @@
+<?php
+
+
+namespace App\Services\Logic\Verify;
+
+use App\Library\Captcha as ImageCaptcha;
+use App\Library\Validators\Common as CommonValidator;
+use App\Services\Logic\Notice\External\Mail\Verify as MailVerifyService;
+use App\Services\Logic\Notice\External\Sms\Verify as SmsVerifyService;
+use App\Services\Logic\Service as LogicService;
+use App\Validators\Captcha as CaptchaValidator;
+use App\Validators\Verify as VerifyValidator;
+
+class Code extends LogicService
+{
+
+    public function handle()
+    {
+        $post = $this->request->getPost();
+
+        $captchaValidator = new CaptchaValidator();
+
+        $captchaValidator->checkCode($post['ticket'], $post['rand']);
+
+        $captcha = new ImageCaptcha();
+
+        $captcha->clear($post['ticket']);
+
+        $verifyValidator = new VerifyValidator();
+
+        $isMail = CommonValidator::email($post['account']);
+
+        if ($isMail) {
+            $account = $verifyValidator->checkEmail($post['account']);
+            $service = new MailVerifyService();
+        } else {
+            $account = $verifyValidator->checkPhone($post['account']);
+            $service = new SmsVerifyService();
+        }
+
+        $service->handle($account);
+    }
+
+}

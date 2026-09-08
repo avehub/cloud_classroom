@@ -1,0 +1,187 @@
+<?php
+
+
+namespace App\Http\Api\Services;
+
+use App\Models\KgClient as KgClientModel;
+use App\Models\Trade as TradeModel;
+use App\Services\Logic\OrderTrait;
+use App\Services\Logic\Trade\TradeInfo;
+use App\Services\Logic\TradeTrait;
+use App\Services\Pay\Alipay;
+use App\Services\Pay\Wxpay;
+use App\Validators\Client as ClientValidator;
+use App\Validators\Order as OrderValidator;
+use App\Validators\Trade as TradeValidator;
+
+class Trade extends Service
+{
+
+    use OrderTrait;
+    use TradeTrait;
+
+    public function createH5Trade()
+    {
+        $post = $this->request->getPost();
+
+        $validator = new ClientValidator();
+
+        $platform = $this->getPlatform();
+
+        $validator->checkH5Platform($platform);
+
+        $order = $this->checkOrderBySn($post['order_sn']);
+
+        $validator = new OrderValidator();
+
+        $validator->checkIfAllowPay($order);
+
+        $user = $this->getLoginUser();
+
+        $validator = new TradeValidator();
+
+        $channel = $validator->checkChannel($post['channel']);
+
+        $trade = new TradeModel();
+
+        $trade->subject = $order->subject;
+        $trade->amount = $order->amount;
+        $trade->channel = $channel;
+        $trade->order_id = $order->id;
+        $trade->owner_id = $user->id;
+
+        $trade->create();
+
+        $redirect = '';
+
+        if ($trade->channel == TradeModel::CHANNEL_ALIPAY) {
+            $alipay = new Alipay();
+            $response = $alipay->wap($trade);
+            $redirect = $response ? $response->getTargetUrl() : '';
+        } elseif ($trade->channel == TradeModel::CHANNEL_WXPAY) {
+            $wxpay = new Wxpay();
+            $response = $wxpay->wap($trade);
+            $redirect = $response ? $response->getTargetUrl() : '';
+        }
+
+        $payment = ['redirect' => $redirect];
+
+        return [
+            'trade' => $this->handleTradeInfo($trade->sn),
+            'payment' => $payment,
+        ];
+    }
+
+    public function createMpTrade()
+    {
+        $post = $this->request->getPost();
+
+        $order = $this->checkOrderBySn($post['order_sn']);
+
+        $validator = new OrderValidator();
+
+        $validator->checkIfAllowPay($order);
+
+        $user = $this->getLoginUser();
+
+        $channel = TradeModel::CHANNEL_WXPAY;
+
+        $trade = new TradeModel();
+
+        $trade->subject = $order->subject;
+        $trade->amount = $order->amount;
+        $trade->channel = $channel;
+        $trade->order_id = $order->id;
+        $trade->owner_id = $user->id;
+
+        $trade->create();
+
+        $wxpay = new Wxpay();
+
+        $response = $wxpay->mp($trade, $post['open_id']);
+
+        $payment = [
+            'appId' => $response->appId,
+            'timeStamp' => $response->timeStamp,
+            'nonceStr' => $response->nonceStr,
+            'package' => $response->package,
+            'signType' => $response->signType,
+            'paySign' => $response->paySign,
+        ];
+
+        return [
+            'trade' => $this->handleTradeInfo($trade->sn),
+            'payment' => $payment,
+        ];
+    }
+
+    public function createMiniTrade()
+    {
+        $post = $this->request->getPost();
+
+        $order = $this->checkOrderBySn($post['order_sn']);
+
+        $validator = new OrderValidator();
+
+        $validator->checkIfAllowPay($order);
+
+        $validator = new TradeValidator();
+
+        $channel = $validator->checkChannel($post['channel']);
+
+        $user = $this->getLoginUser();
+
+        $trade = new TradeModel();
+
+        $trade->subject = $order->subject;
+        $trade->amount = $order->amount;
+        $trade->channel = $channel;
+        $trade->order_id = $order->id;
+        $trade->owner_id = $user->id;
+
+        $trade->create();
+
+        $payment = [];
+
+        if ($post['channel'] == TradeModel::CHANNEL_ALIPAY) {
+
+            $alipay = new Alipay();
+
+            $response = $alipay->mini($trade, $post['buyer_id']);
+
+            $payment = ['trade_no' => $response->trade_no];
+
+        } elseif ($post['channel'] == TradeModel::CHANNEL_WXPAY) {
+
+            $wxpay = new Wxpay();
+
+            $response = $wxpay->mini($trade, $post['open_id']);
+
+            $payment = [
+                'timeStamp' => $response->timeStamp,
+                'nonceStr' => $response->nonceStr,
+                'package' => $response->package,
+                'signType' => $response->signType,
+                'paySign' => $response->paySign,
+            ];
+        }
+
+        return [
+            'trade' => $this->handleTradeInfo($trade->sn),
+            'payment' => $payment,
+        ];
+    }
+
+    protected function getPlatform()
+    {
+        return $this->request->getHeader('X-Platform');
+    }
+
+    protected function handleTradeInfo($sn)
+    {
+        $service = new TradeInfo();
+
+        return $service->handle($sn);
+    }
+
+}

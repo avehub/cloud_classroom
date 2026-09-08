@@ -1,0 +1,63 @@
+<?php
+
+
+namespace App\Repos;
+
+use App\Library\Paginator\Adapter\QueryBuilder as PagerQueryBuilder;
+use App\Models\CourseTopic as CourseTopicModel;
+use Phalcon\Mvc\Model;
+
+class CourseTopic extends Repository
+{
+
+    public function paginate($where = [], $sort = 'latest', $page = 1, $limit = 15)
+    {
+        $builder = $this->modelsManager->createBuilder();
+
+
+        $builder->from(CourseTopicModel::class);
+
+        $builder->where('1 = 1');
+
+        if (!empty($where['course_id'])) {
+            $builder->andWhere('course_id = :course_id:', ['course_id' => $where['course_id']]);
+        }
+
+        if (!empty($where['topic_id'])) {
+            $builder->andWhere('topic_id = :topic_id:', ['topic_id' => $where['topic_id']]);
+        }
+
+        switch ($sort) {
+            case 'oldest':
+                $orderBy = 'id ASC';
+                break;
+            default:
+                $orderBy = 'id DESC';
+                break;
+        }
+
+        $builder->orderBy($orderBy);
+
+        $pager = new PagerQueryBuilder([
+            'builder' => $builder,
+            'page' => $page,
+            'limit' => $limit,
+        ]);
+
+        return $pager->paginate();
+    }
+
+    /**
+     * @param int $courseId
+     * @param int $topicId
+     * @return CourseTopicModel|Model|bool
+     */
+    public function findCourseTopic($courseId, $topicId)
+    {
+        return CourseTopicModel::findFirst([
+            'conditions' => 'course_id = :course_id: AND topic_id = :topic_id:',
+            'bind' => ['course_id' => $courseId, 'topic_id' => $topicId],
+        ]);
+    }
+
+}
