@@ -39,7 +39,7 @@ fi
 
 info "====== 2. 初始化持久化目录结构 ======"
 mkdir -p mysql/data mysql/log
-mkdir -p redis/data
+mkdir -p redis/data 
 mkdir -p xunsearch/data
 mkdir -p nginx/log nginx/ssl
 mkdir -p php/log php/supervisor/log
