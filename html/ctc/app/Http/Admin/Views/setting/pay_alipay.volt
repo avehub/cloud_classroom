@@ -26,7 +26,13 @@
     <div class="layui-form-item">
         <label class="layui-form-label">Private Key</label>
         <div class="layui-input-block">
-            <textarea class="layui-textarea" name="private_key" lay-verify="required">{{ alipay.private_key }}</textarea>
+            <textarea class="layui-textarea" name="private_key" lay-verify="required" placeholder="应用私钥（Merchant Private Key）">{{ alipay.private_key }}</textarea>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">Public Key</label>
+        <div class="layui-input-block">
+            <textarea class="layui-textarea" name="ali_public_key" placeholder="支付宝公钥（Ali Public Key，使用普通公钥模式时必填）">{{ alipay.ali_public_key }}</textarea>
         </div>
     </div>
     <div class="layui-form-item">

@@ -86,7 +86,9 @@ class Chapter extends Service
 
         } catch (\Exception $e) {
 
-            $this->db->rollback();
+            if ($this->db->isUnderTransaction()) {
+                $this->db->rollback();
+            }
 
             $logger = $this->getLogger();
 
@@ -209,10 +211,12 @@ class Chapter extends Service
 
         $course = $courseRepo->findById($chapter->course_id);
 
-        $courseStats = new CourseStatService();
+        if ($course) {
+            $courseStats = new CourseStatService();
 
-        $courseStats->updateLessonCount($course->id);
-        $courseStats->updateAttrs($course->id);
+            $courseStats->updateLessonCount($course->id);
+            $courseStats->updateAttrs($course->id);
+        }
     }
 
     protected function rebuildChapterCache(ChapterModel $chapter)

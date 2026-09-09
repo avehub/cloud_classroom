@@ -228,7 +228,67 @@ class Vod extends Service
     }
 
     /**
-     * 获取播放地址 (动态应用后台配置的协议并生成实时有效 A 类防盗链签名)
+     * 获取按需实时有效播放流（带 Redis 短时缓存）
+     *
+     * @param string $fileId
+     * @return array|null
+     */
+    public function getLivePlayTranscode($fileId)
+    {
+        if (!$fileId) return null;
+
+        $cacheKey = "vod:play_urls:{$fileId}";
+        $redis = $this->getRedis();
+
+        if ($redis) {
+            $cached = $redis->get($cacheKey);
+            if ($cached) {
+                $decoded = json_decode($cached, true);
+                if (!empty($decoded) && is_array($decoded)) {
+                    return $decoded;
+                }
+            }
+        }
+
+        $playInfo = $this->getPlayInfo($fileId);
+
+        if ($playInfo) {
+            $list = $playInfo['PlayInfoList'] ?? [];
+            $duration = isset($playInfo['Duration']) ? intval($playInfo['Duration']) : 0;
+
+            if (!empty($list)) {
+                $result = [];
+                foreach ($list as $file) {
+                    $rawUrl = $file['MainPlayUrl'] ?? '';
+                    if (empty($rawUrl)) continue;
+
+                    $result[] = [
+                        'url' => $rawUrl,
+                        'width' => $file['Width'] ?? 0,
+                        'height' => $file['Height'] ?? 0,
+                        'definition' => $file['Definition'] ?? '',
+                        'duration' => $duration,
+                        'format' => $file['Format'] ?? '',
+                        'size' => round(($file['Size'] ?? 0) / 1024 / 1024, 2),
+                        'rate' => intval(($file['Bitrate'] ?? 0) / 1024),
+                    ];
+                }
+
+                if (!empty($result)) {
+                    if ($redis) {
+                        // 缓存 1200 秒（低于 1800 秒），确保过期前自动向火山官方重新获取最新带签名的有效播放流
+                        $redis->setex($cacheKey, 1200, json_encode($result));
+                    }
+                    return $result;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 获取播放地址 (直接使用火山官方 GetPlayInfo 下发的合法带签名播放链接)
      *
      * @param string $url
      * @return string
@@ -237,57 +297,7 @@ class Vod extends Service
     {
         if (empty($url)) return '';
 
-        $parsed = parse_url($url);
-        $host = $parsed['host'] ?? '';
-        $port = isset($parsed['port']) ? ':' . $parsed['port'] : '';
-        $path = $parsed['path'] ?? '';
-
-        // 1. 动态对齐后台配置的分发协议 (http / https)
-        $protocol = $this->settings['protocol'] ?: 'http';
-
-        // 2. 动态对齐后台配置的自定义分发域名 (如配置了自定义加速域名)
-        if (!empty($this->settings['domain'])) {
-            $customDomain = trim($this->settings['domain']);
-            $customDomain = str_replace(['http://', 'https://'], '', $customDomain);
-            if (!empty($customDomain)) {
-                $host = $customDomain;
-            }
-        }
-
-        // 3. 过滤剥离可能残留的旧 auth_key
-        $queryArr = [];
-        if (!empty($parsed['query'])) {
-            parse_str($parsed['query'], $queryArr);
-            unset($queryArr['auth_key']);
-        }
-
-        $basePlayUrl = "{$protocol}://{$host}{$port}{$path}";
-        if (!empty($queryArr)) {
-            $basePlayUrl .= '?' . http_build_query($queryArr);
-        }
-
-        // 4. 若未开启防盗链或未设置 Key，直接返回最新协议+域名的播放地址
-        if (empty($this->settings['key_anti_enabled']) || empty($this->settings['key_anti_key'])) {
-            return $basePlayUrl;
-        }
-
-        // 5. 实时生成最新 A 类签名（保证每次访问均有完整有效时长）
-        $key = $this->settings['key_anti_key'];
-        $expiry = (int)($this->settings['key_anti_expiry'] ?: 1800);
-        $timestamp = time() + $expiry; // 十进制 Unix 时间戳
-        $rand = '0'; // 随机串
-        $uid = '0';  // 用户ID
-
-        // 签名串 S = Path-Timestamp-Rand-Uid-PrivateKey
-        // HashValue = md5(S)
-        // 鉴权参数 auth_key = Timestamp-Rand-Uid-HashValue
-        $signStr = sprintf('%s-%d-%s-%s-%s', $path, $timestamp, $rand, $uid, $key);
-        $hashValue = md5($signStr);
-        $authKey = sprintf('%d-%s-%s-%s', $timestamp, $rand, $uid, $hashValue);
-
-        $delimiter = (strpos($basePlayUrl, '?') !== false) ? '&' : '?';
-
-        return $basePlayUrl . $delimiter . 'auth_key=' . $authKey;
+        return (string)$url;
     }
 
     /**

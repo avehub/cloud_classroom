@@ -42,13 +42,10 @@ class AlipayGateway extends Service
         $level = $config->get('env') == ENV_DEV ? 'debug' : 'info';
 
         $options = [
-            'app_id' => $this->settings['app_id'],
-            'private_key' => $this->settings['private_key'],
-            'ali_public_key' => config_path('alipay/alipayCertPublicKey.crt'), // 支付宝公钥证书
-            'alipay_root_cert' => config_path('alipay/alipayRootCert.crt'), // 支付宝根证书
-            'app_cert_public_key' => config_path('alipay/appCertPublicKey.crt'), // 应用公钥证书
-            'notify_url' => $this->settings['notify_url'],
-            'return_url' => $this->settings['return_url'],
+            'app_id' => $this->settings['app_id'] ?? '',
+            'private_key' => $this->settings['private_key'] ?? '',
+            'notify_url' => $this->settings['notify_url'] ?? '',
+            'return_url' => $this->settings['return_url'] ?? '',
             'log' => [
                 'file' => log_path('alipay.log'),
                 'level' => $level,
@@ -56,6 +53,19 @@ class AlipayGateway extends Service
                 'max_file' => 30,
             ],
         ];
+
+        $appCertPath = config_path('alipay/appCertPublicKey.crt');
+        $rootCertPath = config_path('alipay/alipayRootCert.crt');
+        $aliCertPath = config_path('alipay/alipayCertPublicKey.crt');
+
+        // 优先支持公钥证书模式；若证书文件不存在，则退回普通公钥字符串模式
+        if (is_file($appCertPath) && is_file($rootCertPath) && is_file($aliCertPath)) {
+            $options['app_cert_public_key'] = $appCertPath;
+            $options['alipay_root_cert'] = $rootCertPath;
+            $options['ali_public_key'] = $aliCertPath;
+        } elseif (!empty($this->settings['ali_public_key'])) {
+            $options['ali_public_key'] = $this->settings['ali_public_key'];
+        }
 
         if ($config->get('env') == ENV_DEV) {
             $options['mode'] = 'dev';

@@ -143,7 +143,9 @@ class User extends Service
 
         } catch (\Exception $e) {
 
-            $this->db->rollback();
+            if ($this->db->isUnderTransaction()) {
+                $this->db->rollback();
+            }
 
             $logger = $this->getLogger();
 

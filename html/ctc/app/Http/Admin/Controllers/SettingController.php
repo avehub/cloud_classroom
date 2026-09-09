@@ -106,26 +106,23 @@ class SettingController extends Controller
     }
 
     /**
-     * @Route("/test/storage", name="admin.test.storage")
+     * @Route("/test/storage", name="admin.setting.test_storage")
      */
     public function testStorageAction()
     {
-        $storage = new \App\Services\Storage();
+        $storageService = new \App\Services\MyStorage();
 
-        $fileName = 'test_' . date('YmdHis') . '.txt';
-        $key = $storage->generateFileName('txt', 'test');
-
-        $result = $storage->putString($key, 'Storage test at ' . date('Y-m-d H:i:s'));
+        $result = $storageService->uploadTestFile();
 
         if ($result) {
-            $url = $storage->getFileUrl($result);
+            $url = $storageService->getFileUrl($result);
             return $this->jsonSuccess([
                 'msg' => '上传测试成功',
                 'url' => $url,
             ]);
         }
 
-        return $this->jsonError(['msg' => '上传测试失败']);
+        return $this->jsonError(['msg' => '上传测试失败，请检查相关配置']);
     }
 
     /**

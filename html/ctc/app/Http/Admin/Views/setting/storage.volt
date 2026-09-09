@@ -66,7 +66,7 @@
                         </div>
                     </div>
                 </form>
-                <form class="layui-form kg-form" method="POST" action="{{ url({'for':'admin.test.storage'}) }}">
+                <form class="layui-form kg-form" method="POST" action="{{ url({'for':'admin.setting.test_storage'}) }}">
                     <fieldset class="layui-elem-field layui-field-title">
                         <legend>上传测试</legend>
                     </fieldset>

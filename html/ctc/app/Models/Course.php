@@ -409,12 +409,16 @@ class Course extends Model
             $path = $url;
         }
 
-        // 去除多余重复的 /upload 前缀或默认前缀，保持干净的相对路径
-        if (preg_match('/(/img/default/[a-zA-Z0-9_\-\.]+)/', $path, $matches)) {
+        // 去除多余重复的 /upload 或 /storage/upload 前缀，保持干净的相对路径
+        if (preg_match('/(\/img\/default\/[a-zA-Z0-9_\-\.]+)/', $path, $matches)) {
             return $matches[1];
         }
 
-        while (strpos($path, '/upload/upload/') === 0) {
+        while (strpos($path, '/storage/upload') === 0) {
+            $path = substr($path, 15);
+        }
+
+        while (strpos($path, '/upload') === 0) {
             $path = substr($path, 7);
         }
 

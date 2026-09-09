@@ -40,13 +40,22 @@ class ChapterVod extends Service
 
         $vod = $chapterRepo->findChapterVod($chapterId);
 
-        if (empty($vod->file_transcode)) return [];
+        if (!$vod || empty($vod->file_id)) return [];
 
         $vodService = new VodService();
 
+        // 优先按需通过 file_id (Vid) 获取火山官方实时带签名的有效播放流（带短时 Redis 缓存）
+        $transcode = $vodService->getLivePlayTranscode($vod->file_id);
+
+        if (empty($transcode) && !empty($vod->file_transcode)) {
+            $transcode = $vod->file_transcode;
+        }
+
+        if (empty($transcode)) return [];
+
         $result = [];
 
-        foreach ($vod->file_transcode as $file) {
+        foreach ($transcode as $file) {
             $file['url'] = $vodService->getPlayUrl($file['url']);
             $type = $this->getDefinitionType($file['height']);
             $result[$type] = $file;

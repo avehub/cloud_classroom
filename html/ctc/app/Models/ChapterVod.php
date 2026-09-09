@@ -105,21 +105,6 @@ class ChapterVod extends Model
             $this->file_remote = json_decode($this->file_remote, true);
         }
 
-        // 检查并清洗持久化数组中可能残留的历史 auth_key 签名
-        if (!empty($this->file_transcode) && is_array($this->file_transcode)) {
-            $vodService = new VodService();
-            $needUpdate = false;
-            foreach ($this->file_transcode as &$item) {
-                if (!empty($item['url']) && strpos($item['url'], 'auth_key=') !== false) {
-                    $item['url'] = $vodService->getCleanPlayUrl($item['url']);
-                    $needUpdate = true;
-                }
-            }
-            if ($needUpdate) {
-                $this->update();
-            }
-        }
-
         if (!empty($this->file_id) && empty($this->file_transcode)) {
             $this->file_transcode = $this->getFileTranscode($this->file_id);
         }

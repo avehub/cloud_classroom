@@ -1,13 +1,15 @@
 /.idea
 /.env
+/.reasonix
+/reasonix.toml
 /install.sh
 /install-v2.sh
 /upgrade.sh
 /db-backup.sh
 /site-backup.sh
 /site-restore.sh
-/nginx/conf.d/default.conf
-/nginx/conf.d/ssl-default.conf
+/nginx/conf.d/*.conf
+/nginx/ssl
 /install-m4.sh
 /README-M4.md
 /DEPLOY_GUIDE.md
@@ -16,6 +18,7 @@
 /mysql/log/*
 !/mysql/log/.gitkeep
 /redis/data/*
+/redis/log/*
 !/redis/data/.gitkeep
 /xunsearch/data/*
 !/xunsearch/data/.gitkeep
