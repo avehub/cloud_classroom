@@ -1,13 +1,13 @@
 ### 项目介绍
 
-为酷瓜云课堂（腾讯云版） [course-tencent-cloud](https://gitee.com/koogua/course-tencent-cloud) 提供环境支持
+基于酷瓜云课堂二次开发的支持云课堂，支持火山云点播、本地存储
 
 ### 安装指南
 
 下载安装脚本
 
 ```
-cd ~ && curl https://download.koogua.com/ctc/install.sh -o install.sh
+git clone git@github.com:avehub/cloud_classroom.git
 ```
 
 增加执行权限
@@ -28,14 +28,6 @@ nano install.sh
 bash install.sh
 ```
 
-### 备用脚本
-
-如果拉取镜像失败（被墙了），先把原来的 `ctc-docker` 目录删除，再用备用脚本重新安装，其余步骤相同。
-
-```
-cd ~ && curl https://download.koogua.com/ctc/install-v2.sh -o install.sh
-```
-
 ### 访问网站
 
 * 管理账号：10000@163.com / 123456
@@ -43,12 +35,7 @@ cd ~ && curl https://download.koogua.com/ctc/install-v2.sh -o install.sh
 * 后台地址：http://{your-domain}.com/admin
 
 后续设置： [系统设置](https://koogua.com/page/wiki)
- 
-### 测试数据
 
-如果安装过程中选择了测试数据，相关账号和空白安装有所不同。
-
-管理账号：100015@163.com / 123456
 
 ### 结束安装
 
