@@ -18,8 +18,9 @@
 /mysql/log/*
 !/mysql/log/.gitkeep
 /redis/data/*
-/redis/log/*
 !/redis/data/.gitkeep
+/redis/log/*
+!/redis/log/.gitkeep
 /xunsearch/data/*
 !/xunsearch/data/.gitkeep
 /nginx/log/*

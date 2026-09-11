@@ -67,9 +67,11 @@ class AlipayGateway extends Service
             $options['ali_public_key'] = $this->settings['ali_public_key'];
         }
 
-        if ($config->get('env') == ENV_DEV) {
-            $options['mode'] = 'dev';
-        }
+        // 统一配置 HTTP 客户端选项，关闭 SSL 证书校验，防止系统时间超前或 CA 过期导致 cURL error 60
+        $options['http'] = [
+            'timeout' => 5.0,
+            'verify' => false,
+        ];
 
         return Pay::alipay($options);
     }

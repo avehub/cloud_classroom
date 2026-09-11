@@ -254,10 +254,25 @@ class User extends Model
     public static function getAvatarPath($url)
     {
         if (Text::startsWith($url, 'http')) {
-            return parse_url($url, PHP_URL_PATH);
+            $path = parse_url($url, PHP_URL_PATH);
+        } else {
+            $path = $url;
         }
 
-        return $url;
+        // 去除多余重复的 /upload 或 /storage/upload 前缀，保持干净的相对路径
+        if (preg_match('/(\/img\/default\/[a-zA-Z0-9_\-\.]+)/', $path, $matches)) {
+            return $matches[1];
+        }
+
+        while (strpos($path, '/storage/upload') === 0) {
+            $path = substr($path, 15);
+        }
+
+        while (strpos($path, '/upload') === 0) {
+            $path = substr($path, 7);
+        }
+
+        return $path;
     }
 
     public static function genderTypes()
