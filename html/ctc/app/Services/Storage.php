@@ -381,7 +381,7 @@ class Storage extends Service
      * @param string $prefix
      * @return string
      */
-    protected function generateFileName($extension = '', $prefix = '')
+    public function generateFileName($extension = '', $prefix = '')
     {
         $name = uniqid();
 
