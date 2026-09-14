@@ -199,6 +199,35 @@ class PublicController extends \Phalcon\Mvc\Controller
     }
 
     /**
+     * 火山引擎点播(VOD)事件通知回调
+     *
+     * @Post("/vod/notify", name="home.vod.notify")
+     */
+    public function vodNotifyAction()
+    {
+        $rawBody = file_get_contents('php://input');
+        $signature = $this->request->getHeader('X-Vod-Signature') ?: ($this->request->getQuery('Signature') ?: '');
+        $timestamp = $this->request->getHeader('X-Vod-Timestamp') ?: ($this->request->getQuery('Timestamp') ?: '');
+
+        $vodService = new VodService();
+
+        // 校验签名
+        if (!$vodService->verifyCallbackSignature($rawBody, $signature, $timestamp)) {
+            $this->response->setStatusCode(403);
+            return $this->jsonError(['msg' => 'Invalid signature']);
+        }
+
+        $payload = json_decode($rawBody, true);
+        if (empty($payload) || !is_array($payload)) {
+            return $this->jsonError(['msg' => 'Empty or invalid JSON body']);
+        }
+
+        $result = $vodService->handleCallbackEvent($payload);
+
+        return $this->jsonSuccess(['handled' => $result]);
+    }
+
+    /**
      * @Get("/verify/captcha", name="home.verify.captcha")
      */
     public function verifyCaptchaAction()

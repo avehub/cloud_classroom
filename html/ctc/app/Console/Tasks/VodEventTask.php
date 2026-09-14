@@ -13,31 +13,65 @@ class VodEventTask extends Task
 
     public function mainAction()
     {
-        $events = $this->pullEvents();
+        $this->syncPendingChapters();
+    }
 
-        if (!$events) return;
+    /**
+     * 兜底同步：查询处于未完成转码或时长为0的课时，向火山云主动拉取元数据与转码流
+     */
+    protected function syncPendingChapters()
+    {
+        $chapterRepo = new ChapterRepo();
+        $vodService = new VodService();
 
-        $handles = [];
+        // 查找时长为0且未删除的课时 (最多每次同步20条，避免堆积)
+        $chapters = ChapterModel::find([
+            'conditions' => 'deleted = 0 AND model = 1',
+            'order' => 'id DESC',
+            'limit' => 50,
+        ]);
 
-        foreach ($events as $event) {
+        foreach ($chapters as $chapter) {
+            $attrs = $chapter->attrs;
+            $duration = $attrs['duration'] ?? 0;
+            $status = $attrs['file']['status'] ?? 0;
 
-            $result = true;
-
-            if ($event['EventType'] == 'NewFileUpload') {
-                $result = $this->handleNewFileUploadEvent($event);
-            } elseif ($event['EventType'] == 'ProcedureStateChanged') {
-                $result = $this->handleProcedureStateChangedEvent($event);
-            } elseif ($event['EventType'] == 'FileDeleted') {
-                $result = $this->handleFileDeletedEvent($event);
+            if ($duration > 0 && $status == ChapterModel::FS_TRANSLATED) {
+                continue;
             }
 
-            if ($result) {
-                $handles[] = $event['EventHandle'];
+            $vod = $chapterRepo->findChapterVod($chapter->id);
+            if (!$vod || empty($vod->file_id)) {
+                continue;
             }
-        }
 
-        if (count($handles) > 0) {
-            $this->confirmEvents($handles);
+            $fileId = $vod->file_id;
+
+            // 1. 获取源片媒体信息 (获取时长)
+            if ($duration == 0) {
+                $originInfo = $vodService->getOriginVideoInfo($fileId);
+                if (!empty($originInfo['duration'])) {
+                    $attrs['duration'] = (int)$originInfo['duration'];
+                }
+            }
+
+            // 2. 获取转码播放流
+            $transcodes = $vodService->getFileTranscode($fileId);
+            if (!empty($transcodes)) {
+                $vod->file_transcode = $transcodes;
+                $vod->update();
+                $attrs['file']['status'] = ChapterModel::FS_TRANSLATED;
+                if (empty($attrs['duration']) && !empty($transcodes[0]['duration'])) {
+                    $attrs['duration'] = (int)$transcodes[0]['duration'];
+                }
+            } elseif ($attrs['duration'] > 0) {
+                $attrs['file']['status'] = ChapterModel::FS_TRANSLATING;
+            }
+
+            $chapter->attrs = $attrs;
+            $chapter->update();
+
+            $this->updateCourseVodAttrs($chapter->course_id);
         }
     }
 

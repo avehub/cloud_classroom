@@ -131,13 +131,34 @@ class ChapterContent extends Service
 
         $attrs = $chapter->attrs;
 
-        if ($fileId != $vod->file_id) {
+        if ($fileId != $vod->file_id || empty($attrs['duration'])) {
             $vod->file_id = $fileId;
             $vod->file_transcode = [];
-            $vod->update();
 
             $attrs['file']['status'] = ChapterModel::FS_UPLOADED;
             $attrs['duration'] = 0;
+
+            // 主动向火山云同步一次媒体元信息（获取视频时长与转码信息）
+            try {
+                $vodService = new VodService();
+                $originInfo = $vodService->getOriginVideoInfo($fileId);
+                if (!empty($originInfo['duration'])) {
+                    $attrs['duration'] = (int)$originInfo['duration'];
+                }
+
+                $transcodes = $vodService->getFileTranscode($fileId);
+                if (!empty($transcodes)) {
+                    $vod->file_transcode = $transcodes;
+                    $attrs['file']['status'] = ChapterModel::FS_TRANSLATED;
+                    if (empty($attrs['duration']) && !empty($transcodes[0]['duration'])) {
+                        $attrs['duration'] = (int)$transcodes[0]['duration'];
+                    }
+                }
+            } catch (\Throwable $e) {
+                // 查询失败保持默认初始状态，等待后续回调或兜底同步
+            }
+
+            $vod->update();
         }
 
         $chapter->attrs = $attrs;

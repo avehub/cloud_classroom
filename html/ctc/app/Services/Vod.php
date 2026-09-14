@@ -525,6 +525,100 @@ class Vod extends Service
     }
 
     /**
+     * 校验火山引擎回调签名
+     *
+     * @param string $rawBody
+     * @param string $signature
+     * @param string $timestamp
+     * @return bool
+     */
+    public function verifyCallbackSignature($rawBody, $signature, $timestamp)
+    {
+        $callbackKey = $this->settings['volc_callback_key'] ?? '';
+        if (empty($callbackKey)) {
+            return true; // 未配置 key 则放行
+        }
+
+        if (empty($signature)) {
+            return false;
+        }
+
+        // 官方 HMAC-SHA256(RawBody + Timestamp, CallbackKey)
+        $computed = hash_hmac('sha256', $rawBody . $timestamp, $callbackKey);
+        if (hash_equals($computed, $signature)) {
+            return true;
+        }
+
+        // 兼容 MD5 签名方式: md5(RawBody + CallbackKey)
+        $computedMd5 = md5($rawBody . $callbackKey);
+        if (hash_equals($computedMd5, $signature)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * 处理火山引擎点播回调事件
+     *
+     * @param array $payload
+     * @return bool
+     */
+    public function handleCallbackEvent(array $payload)
+    {
+        $eventType = $payload['EventType'] ?? ($payload['Type'] ?? '');
+        $data = $payload['Data'] ?? $payload;
+        $vid = $data['Vid'] ?? ($data['FileId'] ?? '');
+
+        if (empty($vid)) {
+            $this->logger->warn("Volc Callback: Vid is empty, EventType={$eventType}");
+            return false;
+        }
+
+        $chapterRepo = new \App\Repos\Chapter();
+        $chapter = $chapterRepo->findByFileId($vid);
+
+        if (!$chapter) {
+            $this->logger->warn("Volc Callback: Chapter not found for Vid={$vid}");
+            return false;
+        }
+
+        $attrs = $chapter->attrs;
+        $vod = $chapterRepo->findChapterVod($chapter->id);
+
+        // 1. 获取源片媒体信息 (获取时长)
+        $originInfo = $this->getOriginVideoInfo($vid);
+        if (!empty($originInfo['duration'])) {
+            $attrs['duration'] = (int)$originInfo['duration'];
+        }
+
+        // 2. 获取转码播放流
+        $transcodes = $this->getFileTranscode($vid);
+        if (!empty($transcodes)) {
+            if ($vod) {
+                $vod->file_transcode = $transcodes;
+                $vod->update();
+            }
+            $attrs['file']['status'] = \App\Models\Chapter::FS_TRANSLATED;
+            if (empty($attrs['duration']) && !empty($transcodes[0]['duration'])) {
+                $attrs['duration'] = (int)$transcodes[0]['duration'];
+            }
+        } elseif ($attrs['duration'] > 0) {
+            $attrs['file']['status'] = \App\Models\Chapter::FS_TRANSLATING;
+        }
+
+        $chapter->attrs = $attrs;
+        $chapter->update();
+
+        $courseStats = new \App\Services\CourseStat();
+        $courseStats->updateVodAttrs($chapter->course_id);
+
+        $this->logger->info("Volc Callback: Successfully handled EventType={$eventType}, Vid={$vid}, Duration={$attrs['duration']}");
+
+        return true;
+    }
+
+    /**
      * 获取Vod客户端
      *
      * @return VolcVodClient

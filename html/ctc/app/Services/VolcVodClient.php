@@ -245,27 +245,15 @@ class VolcVodClient extends Service
         $params = [
             'SpaceName' => $this->spaceName,
             'SessionKey' => $sessionKey,
-            'Functions' => $functions,
+            'Functions' => kg_json_encode($functions),
         ];
 
         if ($fileName) {
             $params['CallbackArgs'] = $callbackArgs ?: $fileName;
         }
 
-        $result = $this->request('CommitUploadInfo', [], '2020-08-01', 'POST', kg_json_encode($params));
-
-        if (!$result) {
-            // 兼容 GET 形式
-            $getParams = [
-                'SpaceName' => $this->spaceName,
-                'SessionKey' => $sessionKey,
-                'Functions' => kg_json_encode($functions),
-            ];
-            if ($fileName) {
-                $getParams['CallbackArgs'] = $callbackArgs ?: $fileName;
-            }
-            $result = $this->request('CommitUploadInfo', $getParams, '2020-08-01', 'GET');
-        }
+        // 火山引擎 CommitUploadInfo 经实测通过 GET 请求携带 JSON Functions 最稳定
+        $result = $this->request('CommitUploadInfo', $params, '2020-08-01', 'GET');
 
         if (!$result) return false;
 

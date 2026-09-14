@@ -190,7 +190,37 @@ class Chapter extends Validator
         $attrs = $chapter->attrs;
 
         if ($chapter->model == CourseModel::MODEL_VOD) {
-            if ($attrs['duration'] == 0) {
+            if (empty($attrs['duration'])) {
+                // 尝试从火山云主动同步一次时长
+                try {
+                    $chapterRepo = new ChapterRepo();
+                    $vod = $chapterRepo->findChapterVod($chapter->id);
+                    if ($vod && !empty($vod->file_id)) {
+                        $vodService = new \App\Services\Vod();
+                        $originInfo = $vodService->getOriginVideoInfo($vod->file_id);
+                        if (!empty($originInfo['duration'])) {
+                            $attrs['duration'] = (int)$originInfo['duration'];
+                        } else {
+                            $transcodes = $vodService->getFileTranscode($vod->file_id);
+                            if (!empty($transcodes[0]['duration'])) {
+                                $attrs['duration'] = (int)$transcodes[0]['duration'];
+                                $vod->file_transcode = $transcodes;
+                                $attrs['file']['status'] = ChapterModel::FS_TRANSLATED;
+                                $vod->update();
+                            }
+                        }
+
+                        if (!empty($attrs['duration'])) {
+                            $chapter->attrs = $attrs;
+                            $chapter->update();
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // 忽略异常，继续后续判断
+                }
+            }
+
+            if (empty($attrs['duration'])) {
                 throw new BadRequestException('chapter.vod_not_ready');
             }
         } elseif ($chapter->model == CourseModel::MODEL_LIVE) {
