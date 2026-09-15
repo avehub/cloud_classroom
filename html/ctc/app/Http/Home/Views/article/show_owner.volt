@@ -5,7 +5,7 @@
         <div class="layui-card-body">
             <div class="sidebar-user-card">
                 <div class="avatar">
-                    <img src="{{ article.owner.avatar }}!avatar_160" alt="{{ article.owner.name }}">
+                    <img src="{{ article.owner.avatar }}" alt="{{ article.owner.name }}">
                 </div>
                 <div class="info">
                     <div class="name layui-elip">

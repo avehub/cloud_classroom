@@ -24,20 +24,20 @@
 
 <div class="user">
     <ul class="layui-nav">
-        <li class="layui-nav-item">
+        <!-- <li class="layui-nav-item">
             <a class="nav-search" href="javascript:" data-url="{{ url({'for':'home.search.index'}) }}"><i class="layui-icon layui-icon-search"></i> 搜索</a>
         </li>
         <li class="layui-nav-item">
             <a class="nav-vip" href="{{ url({'for':'home.vip.index'}) }}"><i class="layui-icon layui-icon-diamond"></i> 会员</a>
-        </li>
+        </li> -->
         {% if auth_user.id > 0 %}
-            <li class="layui-nav-item">
+            <!-- <li class="layui-nav-item">
                 <a href="javascript:"><i class="layui-icon layui-icon-add-circle"></i> 发布</a>
                 <dl class="layui-nav-child">
                     <dd><a href="{{ url({'for':'home.question.add'}) }}" target="_blank">提问题</a></dd>
                     <dd><a href="{{ url({'for':'home.article.add'}) }}" target="_blank">写文章</a></dd>
                 </dl>
-            </li>
+            </li> -->
             <li class="layui-nav-item">
                 <a href="{{ url({'for':'home.uc.notifications'}) }}" target="notify"><i class="layui-icon layui-icon-notice"></i> 消息<span id="notify-dot"></span></a>
             </li>

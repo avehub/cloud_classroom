@@ -3,7 +3,7 @@
     <div class="layui-card-body">
         <div class="sidebar-user-card">
             <div class="avatar">
-                <img src="{{ question.owner.avatar }}!avatar_160" alt="{{ question.owner.name }}">
+                <img src="{{ question.owner.avatar }}" alt="{{ question.owner.name }}">
             </div>
             <div class="info">
                 <div class="name layui-elip">

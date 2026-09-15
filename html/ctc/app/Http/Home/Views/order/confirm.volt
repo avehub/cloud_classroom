@@ -7,7 +7,7 @@
         <div class="cart-item-card">
             <div class="cover">
                 <span class="type layui-badge layui-bg-green">课程</span>
-                <img src="{{ course.cover }}!cover_270" alt="{{ course.title }}">
+                <img src="{{ course.cover }}" alt="{{ course.title }}">
             </div>
             <div class="info">
                 <p><a href="{{ course_url }}" target="_blank">{{ course.title }}</a></p>
@@ -46,7 +46,7 @@
         <div class="cart-item-card">
             <div class="cover">
                 <span class="type layui-badge layui-bg-orange">会员</span>
-                <img src="{{ vip.cover }}!cover_270" alt="{{ vip.title }}">
+                <img src="{{ vip.cover }}" alt="{{ vip.title }}">
             </div>
             <div class="info">
                 <p>会员服务</p>

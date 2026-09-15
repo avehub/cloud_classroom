@@ -6,7 +6,7 @@
         <div class="comment-card">
             <div class="avatar">
                 <a href="{{ owner_url }}" title="{{ comment.owner.name }}" target="_blank">
-                    <img src="{{ comment.owner.avatar }}!avatar_160" alt="{{ comment.owner.name }}">
+                    <img src="{{ comment.owner.avatar }}" alt="{{ comment.owner.name }}">
                 </a>
             </div>
             <div class="info">
@@ -35,7 +35,7 @@
     <div class="comment-card">
         <div class="avatar">
             <a href="{{ owner_url }}" title="{{ comment.owner.name }}" target="_blank">
-                <img src="{{ comment.owner.avatar }}!avatar_160" alt="{{ comment.owner.name }}">
+                <img src="{{ comment.owner.avatar }}" alt="{{ comment.owner.name }}">
             </a>
         </div>
         <div class="info">

@@ -13,7 +13,7 @@
                     <div class="rating">{{ star_info(item.rating) }}</div>
                     <div class="cover">
                         <a href="{{ course_url }}" target="_blank">
-                            <img src="{{ item.cover }}!cover_270" alt="{{ item.title|striptags }}">
+                            <img src="{{ item.cover }}" alt="{{ item.title|striptags }}">
                         </a>
                     </div>
                 </div>

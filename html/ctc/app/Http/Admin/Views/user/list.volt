@@ -55,7 +55,7 @@
             {% set restore_url = url({'for':'admin.user.restore','id':item.id}) %}
             <tr>
                 <td class="center">
-                    <img class="kg-avatar-sm" src="{{ item.avatar }}!avatar_160" alt="{{ item.name }}">
+                    <img class="kg-avatar-sm" src="{{ item.avatar }}" alt="{{ item.name }}">
                 </td>
                 <td>
                     <p>昵称：<a href="{{ edit_url }}">{{ item.name }}</a>{{ status_info(item) }}</p>

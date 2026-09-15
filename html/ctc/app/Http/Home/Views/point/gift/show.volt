@@ -23,7 +23,7 @@
                     <div class="gift-meta">
                         <div class="cover">
                             <span class="type">{{ sale_item_type_badge(gift.type) }}</span>
-                            <img src="{{ gift.cover }}!cover_270" alt="{{ gift.name }}">
+                            <img src="{{ gift.cover }}" alt="{{ gift.name }}">
                         </div>
                         <div class="info">
                             <p class="item">{{ gift.name }}</p>
@@ -101,7 +101,7 @@
                             <div class="sidebar-course-card">
                                 <div class="cover">
                                     <a href="{{ gift_url }}" title="{{ gift.name }}">
-                                        <img src="{{ gift.cover }}!cover_270" alt="{{ gift.name }}">
+                                        <img src="{{ gift.cover }}" alt="{{ gift.name }}">
                                     </a>
                                 </div>
                                 <div class="info">

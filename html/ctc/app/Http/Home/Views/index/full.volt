@@ -38,7 +38,7 @@
                     {% for slide in slides %}
                         <div class="item">
                             <a href="{{ slide.url }}">
-                                <img class="carousel" src="{{ slide.cover }}!slide_1100" alt="{{ slide.title }}">
+                                <img class="carousel" src="{{ slide.cover }}" alt="{{ slide.title }}">
                             </a>
                         </div>
                     {% endfor %}

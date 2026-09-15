@@ -7,7 +7,7 @@
                     <div class="user-card">
                         <div class="avatar">
                             <a href="{{ user_url }}" title="{{ item.about }}" target="_blank">
-                                <img src="{{ item.avatar }}!avatar_160" alt="{{ item.name }}">
+                                <img src="{{ item.avatar }}" alt="{{ item.name }}">
                             </a>
                         </div>
                         <div class="name layui-elip">

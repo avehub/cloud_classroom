@@ -11,7 +11,7 @@
         <div class="header">
             <span class="avatar">
                 <a href="{{ owner_url }}" title="{{ item.owner.name }}" target="_blank">
-                    <img src="{{ item.owner.avatar }}!avatar_160" alt="{{ item.owner.name }}">
+                    <img src="{{ item.owner.avatar }}" alt="{{ item.owner.name }}">
                 </a>
             </span>
             <span class="name">

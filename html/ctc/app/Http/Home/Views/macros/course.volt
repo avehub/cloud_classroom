@@ -48,7 +48,7 @@
         <div class="rating">{{ star_info(course.rating) }}</div>
         <div class="cover">
             <a href="{{ course_url }}" target="_blank">
-                <img src="{{ course.cover }}!cover_270" alt="{{ course.title }}" title="{{ course.title }}">
+                <img src="{{ course.cover }}" alt="{{ course.title }}" title="{{ course.title }}">
             </a>
         </div>
         <div class="info">
@@ -78,7 +78,7 @@
         {% set course_url = url({'for':'home.course.show','id':course.id}) %}
         <div class="sidebar-course-card">
             <div class="cover">
-                <img src="{{ course.cover }}!cover_270" alt="{{ course.title }}">
+                <img src="{{ course.cover }}" alt="{{ course.title }}">
             </div>
             <div class="info">
                 <div class="title layui-elip">

@@ -24,7 +24,7 @@
 
     <div class="user-profile wrap">
         <div class="{{ avatar_class }}">
-            <img src="{{ user.avatar }}!avatar_160" alt="{{ user.name }}">
+            <img src="{{ user.avatar }}" alt="{{ user.name }}">
         </div>
         <div class="info">
             <p>

@@ -14,7 +14,7 @@
             <div class="comment-card review-card">
                 <div class="avatar">
                     <a href="{{ owner_url }}" title="{{ owner_name }}" target="_blank">
-                        <img src="{{ item.owner.avatar }}!avatar_160" alt="{{ owner_name }}">
+                        <img src="{{ item.owner.avatar }}" alt="{{ owner_name }}">
                     </a>
                 </div>
                 <div class="info">

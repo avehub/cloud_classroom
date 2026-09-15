@@ -92,7 +92,7 @@
 <div class="course-meta wrap">
     <div class="cover">
         <span class="model">{{ model_type_badge(course.model) }}</span>
-        <img src="{{ course.cover }}!cover_270" alt="{{ course.title }}">
+        <img src="{{ course.cover }}" alt="{{ course.title }}">
     </div>
     <div class="info">
         {% if course.model == 1 %}

@@ -8,7 +8,7 @@
                     {% set author_url = url({'for':'home.user.show','id':author.id}) %}
                     <div class="sidebar-user-card">
                         <div class="avatar">
-                            <img src="{{ author.avatar }}!avatar_160" alt="{{ author.name }}">
+                            <img src="{{ author.avatar }}" alt="{{ author.name }}">
                         </div>
                         <div class="info">
                             <div class="name layui-elip">

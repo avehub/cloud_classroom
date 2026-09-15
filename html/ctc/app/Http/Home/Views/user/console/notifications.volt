@@ -18,7 +18,7 @@
                         <div class="comment-card notice-card">
                             <div class="avatar">
                                 <a href="{{ sender_url }}" title="{{ item.sender.name }}" target="_blank">
-                                    <img src="{{ item.sender.avatar }}!avatar_160" alt="{{ item.sender.name }}">
+                                    <img src="{{ item.sender.avatar }}" alt="{{ item.sender.name }}">
                                 </a>
                             </div>
                             <div class="info">

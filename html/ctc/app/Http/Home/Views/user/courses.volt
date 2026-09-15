@@ -11,7 +11,7 @@
                         <div class="model">{{ model_type_badge(item.course.model) }}</div>
                         <div class="cover">
                             <a href="{{ course_url }}" title="{{ course_title }}" target="_blank">
-                                <img src="{{ item.course.cover }}!cover_270" alt="{{ course_title }}">
+                                <img src="{{ item.course.cover }}" alt="{{ course_title }}">
                             </a>
                         </div>
                         <div class="info">
