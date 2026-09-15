@@ -74,14 +74,14 @@
         </div>
     {% endif %}
 
-    {% if vip_courses|length > 0 %}
+    <!-- {% if vip_courses|length > 0 %}
         <div class="index-wrap wrap">
             <div class="header">会员课程</div>
             <div class="content">
                 {{ category_courses(vip_courses) }}
             </div>
         </div>
-    {% endif %}
+    {% endif %} -->
 
 {% endblock %}
 
