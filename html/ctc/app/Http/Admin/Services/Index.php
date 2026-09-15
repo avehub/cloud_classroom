@@ -111,13 +111,13 @@ class Index extends Service
 
     public function getReleases()
     {
-        $url = 'https://www.gaodekuai.cn/api/releases';
-
-        $client = new Client();
-
-        $response = $client->get($url);
-
-        $content = json_decode($response->getBody()->getContents(), true);
+        $content = [
+                        [
+                            "title": "稿得快云课堂v1.0.0 发布",
+                            "url": "https://www.gaodekuai.cn",
+                            "date": "2026-09-01"
+                        ]
+        ];
 
         return $content['releases'] ?? [];
     }

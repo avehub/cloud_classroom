@@ -6,7 +6,7 @@ namespace App\Library;
 class AppInfo
 {
 
-    protected $name = '搞得快云课堂';
+    protected $name = '稿得快云课堂';
 
     protected $alias = 'GDK Cloud Classroom';
 
