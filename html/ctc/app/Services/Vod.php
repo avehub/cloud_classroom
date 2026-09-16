@@ -18,6 +18,11 @@ use Phalcon\Logger\Adapter\File as FileLogger;
 class Vod extends Service
 {
 
+    /**
+     * 视频确认不存在时的负缓存时长(秒)
+     */
+    const VID_MISS_CACHE_TTL = 600;
+
     /** @var VolcVodClient */
     protected $client;
 
@@ -131,6 +136,11 @@ class Vod extends Service
 
         $playInfo = $this->getPlayInfo($fileId);
 
+        if (!$playInfo && $this->client->isLastVidNotFound()) {
+            // 视频在火山端已不存在，无需再降级查询源片信息
+            return null;
+        }
+
         if ($playInfo) {
             $list = $playInfo['PlayInfoList'] ?? [];
             $duration = isset($playInfo['Duration']) ? intval($playInfo['Duration']) : 0;
@@ -238,9 +248,15 @@ class Vod extends Service
         if (!$fileId) return null;
 
         $cacheKey = "vod:play_urls:{$fileId}";
+        $missKey = "vod:play_urls_miss:{$fileId}";
         $redis = $this->getRedis();
 
         if ($redis) {
+            // 视频已确认在火山端不存在，短期内直接短路，避免每次访问都打无效接口并刷错误日志
+            if ($redis->exists($missKey)) {
+                return null;
+            }
+
             $cached = $redis->get($cacheKey);
             if ($cached) {
                 $decoded = json_decode($cached, true);
@@ -251,6 +267,14 @@ class Vod extends Service
         }
 
         $playInfo = $this->getPlayInfo($fileId);
+
+        if (!$playInfo && $this->client->isLastVidNotFound()) {
+            if ($redis) {
+                $redis->setex($missKey, self::VID_MISS_CACHE_TTL, 1);
+            }
+            $this->logger->warning("Volc GetPlayInfo: Vid={$fileId} 在火山端不存在，已跳过实时播放流获取");
+            return null;
+        }
 
         if ($playInfo) {
             $list = $playInfo['PlayInfoList'] ?? [];
@@ -308,34 +332,69 @@ class Vod extends Service
      */
     public function getMediaInfo($fileId)
     {
-        try {
+        $state = $this->getMediaState($fileId);
 
-            $info = $this->client->getMediaInfos($fileId);
+        if ($state['exists'] !== true) return false;
 
-            if (!$info || empty($info['MediaInfoList'][0])) return false;
+        $source = $state['source'];
 
-            $media = $info['MediaInfoList'][0];
+        $metaData = [
+            'Bitrate' => $this->estimateBitrate($source),
+            'Size' => $source['Size'] ?? 0,
+            'Width' => $source['Width'] ?? 0,
+            'Height' => $source['Height'] ?? 0,
+            'Duration' => $source['Duration'] ?? 0,
+        ];
 
-            $source = $media['SourceInfo'] ?? [];
+        return ['MediaInfoSet' => [['MetaData' => $metaData]]];
+    }
 
-            $metaData = [
-                'Bitrate' => $this->estimateBitrate($source),
-                'Size' => $source['Size'] ?? 0,
-                'Width' => $source['Width'] ?? 0,
-                'Height' => $source['Height'] ?? 0,
-                'Duration' => $source['Duration'] ?? 0,
-            ];
+    /**
+     * 拉取媒体在火山端的状态(单次 GetMediaInfos 调用)
+     *
+     * 火山对不存在的 Vid 通过 NotExistVids 明确返回，据此可区分
+     * "视频已删除/上传未提交成功"与"接口临时故障"，避免误判。
+     *
+     * @param string $fileId
+     * @return array ['exists' => bool|null, 'source' => array] exists为null表示无法判定
+     */
+    public function getMediaState($fileId)
+    {
+        $state = ['exists' => null, 'source' => []];
 
-            return ['MediaInfoSet' => [['MetaData' => $metaData]]];
+        if (empty($fileId)) return $state;
 
-        } catch (\Throwable $e) {
+        $info = $this->client->getMediaInfos($fileId);
 
-            $this->logger->error('Volc Get Media Info Exception: ' . kg_json_encode([
-                    'message' => $e->getMessage(),
-                ]));
-
-            return false;
+        if (!is_array($info)) {
+            $state['exists'] = $this->client->isLastVidNotFound() ? false : null;
+            return $state;
         }
+
+        $notExistVids = array_map('strval', (array)($info['NotExistVids'] ?? []));
+
+        if (in_array((string)$fileId, $notExistVids, true) || empty($info['MediaInfoList'][0])) {
+            $state['exists'] = false;
+            return $state;
+        }
+
+        $state['exists'] = true;
+        $state['source'] = $info['MediaInfoList'][0]['SourceInfo'] ?? [];
+
+        return $state;
+    }
+
+    /**
+     * 媒体文件在火山端是否仍然存在
+     *
+     * @param string $fileId
+     * @return bool|null true=存在 false=确认不存在 null=无法判定
+     */
+    public function mediaExists($fileId)
+    {
+        $state = $this->getMediaState($fileId);
+
+        return $state['exists'];
     }
 
     /**
@@ -571,7 +630,7 @@ class Vod extends Service
         $vid = $data['Vid'] ?? ($data['FileId'] ?? '');
 
         if (empty($vid)) {
-            $this->logger->warn("Volc Callback: Vid is empty, EventType={$eventType}");
+            $this->logger->warning("Volc Callback: Vid is empty, EventType={$eventType}");
             return false;
         }
 
@@ -579,17 +638,32 @@ class Vod extends Service
         $chapter = $chapterRepo->findByFileId($vid);
 
         if (!$chapter) {
-            $this->logger->warn("Volc Callback: Chapter not found for Vid={$vid}");
+            $this->logger->warning("Volc Callback: Chapter not found for Vid={$vid}");
             return false;
         }
 
         $attrs = $chapter->attrs;
         $vod = $chapterRepo->findChapterVod($chapter->id);
 
-        // 1. 获取源片媒体信息 (获取时长)
-        $originInfo = $this->getOriginVideoInfo($vid);
-        if (!empty($originInfo['duration'])) {
-            $attrs['duration'] = (int)$originInfo['duration'];
+        // 1. 获取源片媒体信息 (同时判定视频在火山端是否存在)
+        $state = $this->getMediaState($vid);
+
+        if ($state['exists'] === false) {
+            // 视频已删除或上传未提交成功，标记失败避免后续兜底任务无休止轮询
+            $attrs['file']['status'] = \App\Models\Chapter::FS_FAILED;
+            $chapter->attrs = $attrs;
+            $chapter->update();
+
+            $courseStats = new \App\Services\CourseStat();
+            $courseStats->updateVodAttrs($chapter->course_id);
+
+            $this->logger->warning("Volc Callback: Vid={$vid} 在火山端不存在，课时已标记为失败");
+
+            return false;
+        }
+
+        if (!empty($state['source']['Duration'])) {
+            $attrs['duration'] = (int)$state['source']['Duration'];
         }
 
         // 2. 获取转码播放流
@@ -603,7 +677,7 @@ class Vod extends Service
             if (empty($attrs['duration']) && !empty($transcodes[0]['duration'])) {
                 $attrs['duration'] = (int)$transcodes[0]['duration'];
             }
-        } elseif ($attrs['duration'] > 0) {
+        } elseif (!empty($attrs['duration'])) {
             $attrs['file']['status'] = \App\Models\Chapter::FS_TRANSLATING;
         }
 

@@ -34,9 +34,14 @@ class VodEventTask extends Task
         foreach ($chapters as $chapter) {
             $attrs = $chapter->attrs;
             $duration = $attrs['duration'] ?? 0;
-            $status = $attrs['file']['status'] ?? 0;
+            $status = $attrs['file']['status'] ?? '';
 
             if ($duration > 0 && $status == ChapterModel::FS_TRANSLATED) {
+                continue;
+            }
+
+            // 如果该课时已被标记为失败(例如视频在火山端不存在或已删除)，跳过后续循环避免反复请求报错
+            if ($status == ChapterModel::FS_FAILED) {
                 continue;
             }
 
@@ -47,12 +52,24 @@ class VodEventTask extends Task
 
             $fileId = $vod->file_id;
 
-            // 1. 获取源片媒体信息 (获取时长)
-            if ($duration == 0) {
-                $originInfo = $vodService->getOriginVideoInfo($fileId);
-                if (!empty($originInfo['duration'])) {
-                    $attrs['duration'] = (int)$originInfo['duration'];
-                }
+            // 1. 获取源片媒体信息：同时判定视频在火山端是否还存在，并顺带补齐时长
+            $state = $vodService->getMediaState($fileId);
+
+            if ($state['exists'] === false) {
+                // 视频已删除或上传未提交成功，标记失败以终止无休止轮询与错误日志刷屏
+                $attrs['file']['status'] = ChapterModel::FS_FAILED;
+                $chapter->attrs = $attrs;
+                $chapter->update();
+
+                $this->updateCourseVodAttrs($chapter->course_id);
+
+                $this->errorPrint("课时#{$chapter->id} 视频(Vid={$fileId})在火山端不存在，已标记为转码失败");
+
+                continue;
+            }
+
+            if ($duration == 0 && !empty($state['source']['Duration'])) {
+                $attrs['duration'] = (int)$state['source']['Duration'];
             }
 
             // 2. 获取转码播放流
@@ -64,7 +81,7 @@ class VodEventTask extends Task
                 if (empty($attrs['duration']) && !empty($transcodes[0]['duration'])) {
                     $attrs['duration'] = (int)$transcodes[0]['duration'];
                 }
-            } elseif ($attrs['duration'] > 0) {
+            } elseif (!empty($attrs['duration'])) {
                 $attrs['file']['status'] = ChapterModel::FS_TRANSLATING;
             }
 

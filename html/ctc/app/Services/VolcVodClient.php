@@ -23,6 +23,17 @@ class VolcVodClient extends Service
     const SERVICE = 'vod';
 
     /**
+     * 火山端"视频不存在"的错误码，用于区分永久失败与临时故障
+     *
+     * @var array
+     */
+    const VID_NOT_FOUND_ERRORS = [
+        'ResourceNotFound.VidNotExist',
+        'InvalidVideo.NotFound',
+        'ResourceNotFound.VideoNotFound',
+    ];
+
+    /**
      * @var array
      */
     protected $settings;
@@ -62,6 +73,13 @@ class VolcVodClient extends Service
      */
     protected $logger;
 
+    /**
+     * 最近一次请求的错误码，用于区分永久失败与临时故障
+     *
+     * @var string
+     */
+    protected $lastErrorCode = '';
+
     public function __construct()
     {
         $this->settings = $this->getSettings('vod');
@@ -93,6 +111,8 @@ class VolcVodClient extends Service
         }
 
         $method = strtoupper($method);
+
+        $this->lastErrorCode = '';
 
         $query = array_merge(['Action' => $action, 'Version' => $version], $params);
 
@@ -161,20 +181,24 @@ class VolcVodClient extends Service
             $data = json_decode($response, true);
 
             if (!isset($data['ResponseMetadata'])) {
+                $this->lastErrorCode = 'InvalidResponse';
+                $this->logger->error("Volc {$action} Invalid Response: " . $response);
                 return false;
             }
 
             $error = $data['ResponseMetadata']['Error'] ?? null;
 
             if (!empty($error['Code'])) {
-                $msg = sprintf('%s: %s', $error['Code'], $error['Message'] ?? '');
-                $this->logger->error("Volc {$action} Error Response: " . $msg);
-                throw new \RuntimeException($msg);
+                $this->lastErrorCode = (string)$error['Code'];
+                $this->logger->error("Volc {$action} Error Response: " . $this->lastErrorCode . ': ' . ($error['Message'] ?? ''));
+                return false;
             }
 
             return $data['Result'] ?? [];
 
         } catch (\Throwable $e) {
+
+            $this->lastErrorCode = 'RequestFailed';
 
             $this->logger->error("Volc {$action} Exception: " . kg_json_encode([
                     'message' => $e->getMessage(),
@@ -182,6 +206,19 @@ class VolcVodClient extends Service
 
             return false;
         }
+    }
+
+    /**
+     * 最近一次失败是否由"视频不存在"导致
+     *
+     * 用于区分永久失败(视频已删除)与临时故障(网络/鉴权/限流)，
+     * 避免临时故障被误判为视频丢失。
+     *
+     * @return bool
+     */
+    public function isLastVidNotFound()
+    {
+        return in_array($this->lastErrorCode, self::VID_NOT_FOUND_ERRORS, true);
     }
 
 /**
