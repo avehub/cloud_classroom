@@ -347,7 +347,13 @@ class Course extends Model
 
     public function beforeSave()
     {
-        if (Text::startsWith($this->cover, 'http')) {
+        /**
+         * 封面统一还原为存储 key 入库
+         *
+         * afterFetch 会把 cover 渲染成展示 URL，命令行环境下该 URL 不以 http 开头，
+         * 若直接回写会导致 /storage/upload 前缀每次保存都累加一层，最终超出字段长度
+         */
+        if (is_string($this->cover)) {
             $this->cover = self::getCoverPath($this->cover);
         }
 
@@ -409,6 +415,10 @@ class Course extends Model
             $path = $url;
         }
 
+        if (empty($path)) {
+            return '';
+        }
+
         // 去除多余重复的 /upload 或 /storage/upload 前缀，保持干净的相对路径
         if (preg_match('/(\/img\/default\/[a-zA-Z0-9_\-\.]+)/', $path, $matches)) {
             return $matches[1];
@@ -422,7 +432,12 @@ class Course extends Model
             $path = substr($path, 7);
         }
 
-        return $path;
+        /**
+         * 去除可能遗留的 query 参数，并按字段长度（varchar(100)）兜底截断
+         */
+        $cleanPath = explode('?', $path)[0];
+
+        return strlen($cleanPath) > 100 ? substr($cleanPath, 0, 100) : $cleanPath;
     }
 
     public static function modelTypes()

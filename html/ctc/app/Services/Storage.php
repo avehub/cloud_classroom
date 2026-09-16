@@ -336,7 +336,7 @@ class Storage extends Service
      */
     public function getFileUrl($key)
     {
-        return $this->getBaseUrl() . $key;
+        return $this->getBaseUrl() . $this->trimLocalRootPrefix($key);
     }
 
     /**
@@ -354,7 +354,32 @@ class Storage extends Service
 
         $style = $style ?: '';
 
-        return $this->getBaseUrl() . $key . $style;
+        return $this->getBaseUrl() . $this->trimLocalRootPrefix($key) . $style;
+    }
+
+    /**
+     * 去除 key 中重复的本地存储根前缀，保证 URL 拼接幂等
+     *
+     * 历史数据可能已把 /storage/upload 前缀写进了 key，直接拼接会产生重复路径
+     *
+     * @param string $key
+     * @return string
+     */
+    protected function trimLocalRootPrefix($key)
+    {
+        if (!is_string($key) || $key === '') {
+            return $key;
+        }
+
+        $prefix = '/' . trim($this->localRootDir, '/');
+
+        $length = strlen($prefix);
+
+        while (strpos($key, $prefix) === 0 && (strlen($key) == $length || $key[$length] == '/')) {
+            $key = substr($key, $length);
+        }
+
+        return $key;
     }
 
     /**
