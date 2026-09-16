@@ -26,7 +26,7 @@ class Annotation extends Provider
 
             } else {
 
-                $annotationsDir = storage_path('cache/annotations/');
+                $annotationsDir = cache_path('annotations') . '/';
 
                 if (!is_dir($annotationsDir)) {
                     @mkdir($annotationsDir, 0777, true);
