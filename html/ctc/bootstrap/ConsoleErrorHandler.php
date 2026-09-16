@@ -25,6 +25,16 @@ class ConsoleErrorHandler extends ErrorHandler
 
         $logger->error($content);
 
+        $failedSql = $this->getFailedSql($e);
+
+        if ($failedSql) {
+            $sqlContent = sprintf('Failed SQL: %s', $failedSql);
+
+            $logger->error($sqlContent);
+
+            $content .= PHP_EOL . $sqlContent;
+        }
+
         $config = $this->getConfig();
 
         if ($config->path('env') == 'dev' || $config->path('log.trace')) {

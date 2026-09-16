@@ -70,6 +70,12 @@ class HttpErrorHandler extends ErrorHandler
 
         $logger->error($content);
 
+        $failedSql = $this->getFailedSql($e);
+
+        if ($failedSql) {
+            $logger->error(sprintf('Failed SQL: %s', $failedSql));
+        }
+
         $config = $this->getConfig();
 
         if ($config->path('env') == 'dev' || $config->path('log.trace')) {

@@ -37,14 +37,14 @@ class Database extends Provider
 
             $connection = new MySqlAdapter($options);
 
-            if ($config->get('env') == ENV_DEV) {
+            /**
+             * 查询日志仅开发环境输出，SQL 语句留存用于错误日志定位
+             */
+            $eventsManager = new EventsManager();
 
-                $eventsManager = new EventsManager();
+            $eventsManager->attach('db', new DbListener($config->get('env') == ENV_DEV));
 
-                $eventsManager->attach('db', new DbListener());
-
-                $connection->setEventsManager($eventsManager);
-            }
+            $connection->setEventsManager($eventsManager);
 
             return $connection;
         });

@@ -3,6 +3,7 @@
 
 namespace Bootstrap;
 
+use App\Listeners\Db as DbListener;
 use Phalcon\Config;
 use Phalcon\Di\Injectable;
 use Throwable;
@@ -50,6 +51,31 @@ abstract class ErrorHandler extends Injectable
     protected function getConfig()
     {
         return $this->getDI()->getShared('config');
+    }
+
+    /**
+     * 获取数据库异常对应的 SQL 内容（最近一次执行的语句与绑定参数）
+     *
+     * @param Throwable $e
+     * @return string
+     */
+    protected function getFailedSql($e)
+    {
+        if (!$e instanceof Throwable) return '';
+
+        $isDbException = false;
+
+        while ($e instanceof Throwable) {
+
+            if ($e instanceof \PDOException || strpos($e->getMessage(), 'SQLSTATE') !== false) {
+                $isDbException = true;
+                break;
+            }
+
+            $e = $e->getPrevious();
+        }
+
+        return $isDbException ? DbListener::getLastSql() : '';
     }
 
     /**
