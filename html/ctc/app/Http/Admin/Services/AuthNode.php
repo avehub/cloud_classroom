@@ -1216,12 +1216,12 @@ class AuthNode extends Service
             'title' => '实用工具',
             'children' => [
                 [
-                    'id' => '６-1',
+                    'id' => '6-1',
                     'title' => '常用工具',
                     'type' => 'menu',
                     'children' => [
                         [
-                            'id' => '６-1-1',
+                            'id' => '6-1-1',
                             'title' => '首页缓存',
                             'type' => 'menu',
                             'route' => 'admin.util.index_cache',
