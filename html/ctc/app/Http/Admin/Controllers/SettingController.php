@@ -5,6 +5,7 @@ namespace App\Http\Admin\Controllers;
 
 use App\Caches\Setting as SettingCache;
 use App\Http\Admin\Services\Setting as SettingService;
+use App\Services\Vod as VodService;
 
 /**
  * @RoutePrefix("/admin/setting")
@@ -148,6 +149,65 @@ class SettingController extends Controller
 
             $this->view->setVar('vod', $vod);
         }
+    }
+
+    /**
+     * 检测当前工作流模板的视频编码配置
+     *
+     * @Post("/vod/h264/check", name="admin.setting.vod_h264_check")
+     */
+    public function vodH264CheckAction()
+    {
+        $vodService = new VodService();
+
+        $inspect = $vodService->inspectWorkflowTemplate();
+
+        if (empty($inspect['exists'])) {
+            return $this->jsonError(['msg' => $inspect['msg'] ?: '未配置工作流模板']);
+        }
+
+        return $this->jsonSuccess(['msg' => $this->formatH264Inspect($inspect)]);
+    }
+
+    /**
+     * 将上传转码工作流切换为 H.264 编码
+     *
+     * @Post("/vod/h264", name="admin.setting.vod_h264")
+     */
+    public function vodH264Action()
+    {
+        $vodService = new VodService();
+
+        $result = $vodService->ensureH264WorkflowTemplate();
+
+        if (empty($result['success'])) {
+            return $this->jsonError(['msg' => $result['msg'] ?? 'H.264 转码配置失败']);
+        }
+
+        return $this->jsonSuccess(['msg' => $result['msg']]);
+    }
+
+    /**
+     * 组装工作流编码检测结果文案
+     *
+     * @param array $inspect
+     * @return string
+     */
+    protected function formatH264Inspect(array $inspect)
+    {
+        $nodes = [];
+
+        foreach ($inspect['transcode_activities'] as $activity) {
+            $nodes[] = $activity['name'] . ($activity['h264'] ? '[H.264]' : '[非H.264]');
+        }
+
+        $msg = sprintf('工作流模板「%s」%s', $inspect['name'], $inspect['msg']);
+
+        if (!empty($nodes)) {
+            $msg .= '：' . implode('、', $nodes);
+        }
+
+        return $msg;
     }
 
     /**

@@ -23,6 +23,12 @@ class VolcVodClient extends Service
     const SERVICE = 'vod';
 
     /**
+     * 工作流模板管理接口的版本号(ListWorkflowTemplate/GetWorkflowTemplate/
+     * CreateWorkflowTemplate/UpdateWorkflowTemplate 仅在该版本提供)
+     */
+    const TEMPLATE_VERSION = '2022-12-01';
+
+    /**
      * 火山端"视频不存在"的错误码，用于区分永久失败与临时故障
      *
      * @var array
@@ -80,6 +86,13 @@ class VolcVodClient extends Service
      */
     protected $lastErrorCode = '';
 
+    /**
+     * 最近一次请求的错误描述，用于向管理端反馈失败原因
+     *
+     * @var string
+     */
+    protected $lastErrorMessage = '';
+
     public function __construct()
     {
         $this->settings = $this->getSettings('vod');
@@ -113,6 +126,8 @@ class VolcVodClient extends Service
         $method = strtoupper($method);
 
         $this->lastErrorCode = '';
+
+        $this->lastErrorMessage = '';
 
         $query = array_merge(['Action' => $action, 'Version' => $version], $params);
 
@@ -182,6 +197,7 @@ class VolcVodClient extends Service
 
             if (!isset($data['ResponseMetadata'])) {
                 $this->lastErrorCode = 'InvalidResponse';
+                $this->lastErrorMessage = '火山引擎点播接口返回数据格式异常';
                 $this->logger->error("Volc {$action} Invalid Response: " . $response);
                 return false;
             }
@@ -190,7 +206,8 @@ class VolcVodClient extends Service
 
             if (!empty($error['Code'])) {
                 $this->lastErrorCode = (string)$error['Code'];
-                $this->logger->error("Volc {$action} Error Response: " . $this->lastErrorCode . ': ' . ($error['Message'] ?? ''));
+                $this->lastErrorMessage = (string)($error['Message'] ?? '');
+                $this->logger->error("Volc {$action} Error Response: " . $this->lastErrorCode . ': ' . $this->lastErrorMessage);
                 return false;
             }
 
@@ -199,6 +216,8 @@ class VolcVodClient extends Service
         } catch (\Throwable $e) {
 
             $this->lastErrorCode = 'RequestFailed';
+
+            $this->lastErrorMessage = $e->getMessage();
 
             $this->logger->error("Volc {$action} Exception: " . kg_json_encode([
                     'message' => $e->getMessage(),
@@ -219,6 +238,29 @@ class VolcVodClient extends Service
     public function isLastVidNotFound()
     {
         return in_array($this->lastErrorCode, self::VID_NOT_FOUND_ERRORS, true);
+    }
+
+    /**
+     * 最近一次请求的错误信息
+     *
+     * @return array
+     */
+    public function getLastError()
+    {
+        return [
+            'code' => $this->lastErrorCode,
+            'message' => $this->lastErrorMessage,
+        ];
+    }
+
+    /**
+     * 当前配置的点播空间名
+     *
+     * @return string
+     */
+    public function getSpaceName()
+    {
+        return $this->spaceName;
     }
 
 /**
@@ -388,6 +430,102 @@ class VolcVodClient extends Service
         if (!$result) return false;
 
         return $result;
+    }
+
+    /**
+     * 查询空间下的工作流模板列表
+     *
+     * @return array|bool
+     */
+    public function listWorkflowTemplates()
+    {
+        $params = ['SpaceName' => $this->spaceName];
+
+        $result = $this->request('ListWorkflowTemplate', $params, self::TEMPLATE_VERSION, 'GET');
+
+        if ($result === false) return false;
+
+        return $result['Data'] ?? [];
+    }
+
+    /**
+     * 查询单个工作流模板详情
+     *
+     * @param string $templateId
+     * @return array|bool
+     */
+    public function getWorkflowTemplate($templateId)
+    {
+        if (empty($templateId)) return false;
+
+        $params = ['TemplateId' => $templateId];
+
+        $result = $this->request('GetWorkflowTemplate', $params, self::TEMPLATE_VERSION, 'GET');
+
+        if ($result === false || empty($result)) return false;
+
+        return $result;
+    }
+
+    /**
+     * 创建工作流模板
+     *
+     * @param array $template
+     * @return string|bool 新模板ID
+     */
+    public function createWorkflowTemplate(array $template)
+    {
+        $params = ['SpaceName' => $this->spaceName];
+
+        $result = $this->request('CreateWorkflowTemplate', $params, self::TEMPLATE_VERSION, 'POST', kg_json_encode($template));
+
+        if ($result === false) return false;
+
+        return $result['WorkflowTemplate']['TemplateId'] ?? false;
+    }
+
+    /**
+     * 更新工作流模板
+     *
+     * TemplateId 需同时通过 Query 传递，仅放在 Body 中会报 "TemplateId is required"
+     *
+     * @param string $templateId
+     * @param array $template
+     * @return bool
+     */
+    public function updateWorkflowTemplate($templateId, array $template)
+    {
+        if (empty($templateId)) return false;
+
+        $params = [
+            'SpaceName' => $this->spaceName,
+            'TemplateId' => $templateId,
+        ];
+
+        $template['TemplateId'] = $templateId;
+
+        $result = $this->request('UpdateWorkflowTemplate', $params, self::TEMPLATE_VERSION, 'POST', kg_json_encode($template));
+
+        return $result !== false;
+    }
+
+    /**
+     * 删除工作流模板
+     *
+     * @param string $templateId
+     * @return bool
+     */
+    public function deleteWorkflowTemplate($templateId)
+    {
+        if (empty($templateId)) return false;
+
+        $params = ['TemplateId' => $templateId];
+
+        $body = ['TemplateId' => $templateId];
+
+        $result = $this->request('DeleteWorkflowTemplate', $params, self::TEMPLATE_VERSION, 'POST', kg_json_encode($body));
+
+        return $result !== false;
     }
 
     /**

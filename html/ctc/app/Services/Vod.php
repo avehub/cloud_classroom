@@ -23,6 +23,31 @@ class Vod extends Service
      */
     const VID_MISS_CACHE_TTL = 600;
 
+    /**
+     * 浏览器无法直接播放的视频编码，命中后不再作为播放源下发，等待 H.264 转码流
+     *
+     * @var array
+     */
+    const INCOMPATIBLE_CODECS = ['hevc', 'h265', 'hev1', 'hvc1'];
+
+    /**
+     * 系统自动创建的 H.264 工作流模板名称
+     */
+    const H264_WORKFLOW_NAME = '课堂H.264转码';
+
+    /**
+     * 火山引擎系统预设 H.264 MP4 转码模板(分辨率由高到低)
+     *
+     * 正常情况下通过解析空间内预设工作流实时获取，此处仅作为兜底默认值
+     *
+     * @var array
+     */
+    const H264_MP4_PRESETS = [
+        ['height' => 720, 'template_id' => 'b343810d7ca54853b141796978a5efa9'],
+        ['height' => 480, 'template_id' => 'cedd40eb7aed4906aa5be7f60b802880'],
+        ['height' => 360, 'template_id' => '5a36ec526baa43d49b113b40aadef952'],
+    ];
+
     /** @var VolcVodClient */
     protected $client;
 
@@ -35,6 +60,13 @@ class Vod extends Service
      * @var array
      */
     protected $settings;
+
+    /**
+     * H.264 转码模板梯度缓存(单次请求内复用)
+     *
+     * @var array
+     */
+    protected $h264Ladder = [];
 
     public function __construct()
     {
@@ -151,6 +183,14 @@ class Vod extends Service
                     $rawUrl = $file['MainPlayUrl'] ?? '';
                     if (empty($rawUrl)) continue;
 
+                    $codec = strtolower((string)($file['Codec'] ?? ''));
+
+                    // 源片为 HEVC 等浏览器不支持的编码时不下发，等待 H.264 转码流生成
+                    if (!$this->isPlayableCodec($codec)) {
+                        $this->logger->warning("Volc GetPlayInfo: Vid={$fileId} 存在浏览器不支持的编码流({$codec})，已跳过");
+                        continue;
+                    }
+
                     // 剥离 URL 中的动态临时参数与 auth_key，保持纯净的基础播放地址用于持久化
                     $cleanUrl = $this->getCleanPlayUrl($rawUrl);
 
@@ -161,6 +201,7 @@ class Vod extends Service
                         'definition' => $file['Definition'] ?? '',
                         'duration' => $duration,
                         'format' => $file['Format'] ?? '',
+                        'codec' => $codec,
                         'size' => round(($file['Size'] ?? 0) / 1024 / 1024, 2),
                         'rate' => intval(($file['Bitrate'] ?? 0) / 1024),
                     ];
@@ -171,29 +212,23 @@ class Vod extends Service
             }
         }
 
-        // 若尚未转码或 GetPlayInfo 暂无分发流，降级获取源片信息作为默认播放源
-        $mediaInfo = $this->getOriginVideoInfo($fileId);
-        if ($mediaInfo) {
-            $domain = $this->settings['domain'] ?? '';
-            $protocol = $this->settings['protocol'] ?: 'https';
-            if ($domain) {
-                $url = "{$protocol}://{$domain}/{$fileId}.mp4";
-                return [
-                    [
-                        'url' => $url,
-                        'width' => $mediaInfo['width'] ?? 0,
-                        'height' => $mediaInfo['height'] ?? 0,
-                        'definition' => 'sd',
-                        'duration' => $mediaInfo['duration'] ?? 0,
-                        'format' => 'mp4',
-                        'size' => round(($mediaInfo['size'] ?? 0) / 1024 / 1024, 2),
-                        'rate' => intval(($mediaInfo['bit_rate'] ?? 0) / 1024),
-                    ]
-                ];
-            }
-        }
-
+        // 尚无可播放的分发流(转码中或源片编码不受支持)，返回空由调用方保持"转码中"状态并重试
         return null;
+    }
+
+    /**
+     * 编码是否为浏览器可直接播放的格式
+     *
+     * @param string $codec
+     * @return bool
+     */
+    public function isPlayableCodec($codec)
+    {
+        $codec = strtolower(trim((string)$codec));
+
+        if ($codec === '') return true;
+
+        return !in_array($codec, self::INCOMPATIBLE_CODECS, true);
     }
 
     /**
@@ -286,6 +321,11 @@ class Vod extends Service
                     $rawUrl = $file['MainPlayUrl'] ?? '';
                     if (empty($rawUrl)) continue;
 
+                    $codec = strtolower((string)($file['Codec'] ?? ''));
+
+                    // 过滤 HEVC 等浏览器无法解码的流，避免下发不可播放地址
+                    if (!$this->isPlayableCodec($codec)) continue;
+
                     $result[] = [
                         'url' => $rawUrl,
                         'width' => $file['Width'] ?? 0,
@@ -293,6 +333,7 @@ class Vod extends Service
                         'definition' => $file['Definition'] ?? '',
                         'duration' => $duration,
                         'format' => $file['Format'] ?? '',
+                        'codec' => $codec,
                         'size' => round(($file['Size'] ?? 0) / 1024 / 1024, 2),
                         'rate' => intval(($file['Bitrate'] ?? 0) / 1024),
                     ];
@@ -690,6 +731,467 @@ class Vod extends Service
         $this->logger->info("Volc Callback: Successfully handled EventType={$eventType}, Vid={$vid}, Duration={$attrs['duration']}");
 
         return true;
+    }
+
+    /**
+     * 获取 H.264 MP4 转码模板梯度(分辨率由高到低)
+     *
+     * 优先解析空间内预设工作流中真实的 H.264 MP4 转码模板，解析失败时使用兜底常量。
+     * res_range 用于"只降不升"：源片分辨率高于下一档时才输出该档。
+     *
+     * @return array
+     */
+    public function getH264TranscodeTemplates()
+    {
+        if (!empty($this->h264Ladder)) {
+            return $this->h264Ladder;
+        }
+
+        $presets = $this->detectH264Presets();
+
+        if (empty($presets)) {
+            $presets = self::H264_MP4_PRESETS;
+        }
+
+        // 优先采用 720P/480P/360P 三档，与前台 高清/标清/极速 一一对应
+        $preferred = array_column(self::H264_MP4_PRESETS, 'height');
+
+        $filtered = array_values(array_filter($presets, function ($preset) use ($preferred) {
+            return in_array((int)$preset['height'], $preferred, true);
+        }));
+
+        if (!empty($filtered)) {
+            $presets = $filtered;
+        }
+
+        usort($presets, function ($a, $b) {
+            return $b['height'] <=> $a['height'];
+        });
+
+        $presets = array_slice($presets, 0, count(self::H264_MP4_PRESETS));
+
+        $ladder = [];
+
+        foreach ($presets as $index => $preset) {
+            $height = (int)$preset['height'];
+            $nextHeight = isset($presets[$index + 1]) ? (int)$presets[$index + 1]['height'] : 0;
+
+            $ladder[] = [
+                'height' => $height,
+                'name' => sprintf('%dP-MP4-H264', $height),
+                'template_id' => $preset['template_id'],
+                'res_range' => $nextHeight > 0 ? ($nextHeight + 1) . ',-1' : '',
+            ];
+        }
+
+        $this->h264Ladder = $ladder;
+
+        return $ladder;
+    }
+
+    /**
+     * 从空间预设工作流中解析 H.264 MP4 转码模板
+     *
+     * @return array
+     */
+    protected function detectH264Presets()
+    {
+        $templates = $this->client->listWorkflowTemplates();
+
+        if (!is_array($templates)) return [];
+
+        $result = [];
+
+        foreach ($templates as $template) {
+            foreach (($template['Activities'] ?? []) as $activity) {
+                if (($activity['Type'] ?? '') != 'TranscodeVideo') continue;
+
+                $name = (string)($activity['Name'] ?? '');
+                $templateId = (string)($activity['Params']['TemplateId'] ?? '');
+
+                if (empty($templateId)) continue;
+                if (stripos($name, 'MP4') === false) continue;
+                if (!preg_match('/H\.?264/i', $name)) continue;
+                if (stripos($name, 'DRM') !== false) continue;
+                if (!preg_match('/(\d{3,4})P/i', $name, $matches)) continue;
+
+                $height = (int)$matches[1];
+
+                if (!isset($result[$height])) {
+                    $result[$height] = ['height' => $height, 'template_id' => $templateId];
+                }
+            }
+        }
+
+        return array_values($result);
+    }
+
+    /**
+     * 检查工作流模板是否已输出 H.264
+     *
+     * @param string $templateId
+     * @return array
+     */
+    public function inspectWorkflowTemplate($templateId = '')
+    {
+        $templateId = $templateId ?: (string)($this->settings['volc_trans_template'] ?? '');
+
+        $result = [
+            'template_id' => $templateId,
+            'name' => '',
+            'exists' => false,
+            'h264_ready' => false,
+            'transcode_activities' => [],
+            'msg' => '未配置工作流模板',
+        ];
+
+        if (empty($templateId)) return $result;
+
+        $template = $this->client->getWorkflowTemplate($templateId);
+
+        if (!$template) {
+            $error = $this->client->getLastError();
+            $result['msg'] = '读取工作流模板失败: ' . ($error['message'] ?: $error['code']);
+            return $result;
+        }
+
+        return $this->inspectTemplateData($template, $this->getH264TranscodeTemplates());
+    }
+
+    /**
+     * 解析工作流模板的转码节点与编码情况
+     *
+     * @param array $template
+     * @param array $ladder
+     * @return array
+     */
+    protected function inspectTemplateData(array $template, array $ladder)
+    {
+        $h264Ids = array_column($ladder, 'template_id');
+
+        $result = [
+            'template_id' => $template['TemplateId'] ?? '',
+            'name' => $template['Name'] ?? '',
+            'exists' => true,
+            'h264_ready' => false,
+            'transcode_activities' => [],
+            'msg' => '',
+        ];
+
+        foreach (($template['Activities'] ?? []) as $activity) {
+            $type = (string)($activity['Type'] ?? '');
+
+            if (!in_array($type, ['TranscodeVideo', 'AdaptBitrateTranscode'], true)) continue;
+
+            $name = (string)($activity['Name'] ?? '');
+            $transcodeId = (string)($activity['Params']['TemplateId'] ?? '');
+
+            $isH264 = $type == 'TranscodeVideo' && (
+                in_array($transcodeId, $h264Ids, true) ||
+                (stripos($name, 'MP4') !== false && preg_match('/H\.?264/i', $name) && stripos($name, 'DRM') === false)
+            );
+
+            $result['transcode_activities'][] = [
+                'name' => $name,
+                'type' => $type,
+                'template_id' => $transcodeId,
+                'h264' => (bool)$isH264,
+            ];
+
+            if ($isH264) {
+                $result['h264_ready'] = true;
+            }
+        }
+
+        $result['msg'] = $result['h264_ready'] ? '已包含 H.264 转码节点' : '未包含 H.264 MP4 转码节点';
+
+        return $result;
+    }
+
+    /**
+     * 确保上传使用的工作流输出 H.264 编码
+     *
+     * 已配置模板时就地改造(保留封面截图、水印、结束节点等原有配置)，
+     * 未配置时创建一个仅包含 H.264 转码的新模板并写入配置。
+     *
+     * @return array
+     */
+    public function ensureH264WorkflowTemplate()
+    {
+        $ladder = $this->getH264TranscodeTemplates();
+
+        if (empty($ladder)) {
+            return ['success' => false, 'msg' => '未找到可用的 H.264 MP4 转码模板，请确认点播空间预设模板'];
+        }
+
+        $templateId = (string)($this->settings['volc_trans_template'] ?? '');
+
+        $template = $templateId ? $this->client->getWorkflowTemplate($templateId) : false;
+
+        if ($templateId && !$template) {
+            $error = $this->client->getLastError();
+            return ['success' => false, 'msg' => '读取工作流模板失败: ' . ($error['message'] ?: $error['code'])];
+        }
+
+        $backupFile = '';
+
+        if ($template) {
+
+            $inspect = $this->inspectTemplateData($template, $ladder);
+
+            if ($inspect['h264_ready']) {
+                return [
+                    'success' => true,
+                    'changed' => false,
+                    'template_id' => $templateId,
+                    'msg' => sprintf('工作流模板「%s」已是 H.264 转码配置', $inspect['name']),
+                ];
+            }
+
+            $backupFile = $this->backupWorkflowTemplate($template);
+
+            $payload = $this->buildH264WorkflowPayload($template, $ladder);
+
+            if (!$this->client->updateWorkflowTemplate($templateId, $payload)) {
+                $error = $this->client->getLastError();
+                return ['success' => false, 'msg' => '更新工作流模板失败: ' . ($error['message'] ?: $error['code'])];
+            }
+
+        } else {
+
+            $payload = $this->buildH264WorkflowPayload([], $ladder);
+
+            $newTemplateId = $this->client->createWorkflowTemplate($payload);
+
+            if (!$newTemplateId) {
+                $error = $this->client->getLastError();
+                return ['success' => false, 'msg' => '创建工作流模板失败: ' . ($error['message'] ?: $error['code'])];
+            }
+
+            $templateId = $newTemplateId;
+
+            $this->updateVodSetting('volc_trans_template', $templateId);
+        }
+
+        $verify = $this->inspectWorkflowTemplate($templateId);
+
+        if (empty($verify['h264_ready'])) {
+            return ['success' => false, 'msg' => '工作流模板已提交，但 H.264 校验未通过，请到火山引擎点播控制台检查'];
+        }
+
+        $definitions = implode('/', array_map(function ($item) {
+            return $item['height'] . 'P';
+        }, $ladder));
+
+        $msg = sprintf('工作流模板「%s」已切换为 H.264 转码(%s)', $verify['name'], $definitions);
+
+        if ($backupFile) {
+            $msg .= '，原配置已备份';
+        }
+
+        $this->logger->info("Volc H264 Workflow: {$msg}, TemplateId={$templateId}, Backup={$backupFile}");
+
+        return [
+            'success' => true,
+            'changed' => true,
+            'template_id' => $templateId,
+            'backup' => $backupFile,
+            'activities' => $verify['transcode_activities'],
+            'msg' => $msg,
+        ];
+    }
+
+    /**
+     * 构造 H.264 工作流模板提交数据(保留非转码节点与水印配置)
+     *
+     * @param array $template
+     * @param array $ladder
+     * @return array
+     */
+    protected function buildH264WorkflowPayload(array $template, array $ladder)
+    {
+        $logoTemplateId = '';
+
+        $kept = [];
+
+        $end = null;
+
+        foreach (($template['Activities'] ?? []) as $activity) {
+            $type = (string)($activity['Type'] ?? '');
+
+            if (in_array($type, ['TranscodeVideo', 'AdaptBitrateTranscode'], true)) {
+                if ($logoTemplateId === '') {
+                    $logoTemplateId = (string)($activity['Params']['LogoTemplateId'] ?? '');
+                }
+                continue;
+            }
+
+            if ($type == 'End') {
+                $end = $activity;
+                continue;
+            }
+
+            $kept[] = $activity;
+        }
+
+        $activities = $kept;
+
+        foreach ($ladder as $item) {
+            $activities[] = [
+                'ActivityId' => sprintf('TranscodeVideo_h264_%dp', $item['height']),
+                'Name' => $item['name'],
+                'Description' => '转码输出 H.264 编码的 MP4 文件，保障浏览器直接播放',
+                'Type' => 'TranscodeVideo',
+                'Params' => [
+                    'TemplateId' => $item['template_id'],
+                    'LogoTemplateId' => $logoTemplateId,
+                    'FileName' => '',
+                    'Parallel' => ['Enabled' => false],
+                    'Subtitle' => ['Language' => '', 'FontType' => '', 'SubtitleStyleTemplateId' => ''],
+                    'Condition' => ['ResRange' => $item['res_range']],
+                ],
+                'Dependencies' => null,
+                'Priority' => 0,
+                'ErrorCatch' => false,
+            ];
+        }
+
+        $activities[] = $end ?: [
+            'ActivityId' => 'End',
+            'Name' => 'End',
+            'Type' => 'End',
+            'Params' => ['TranscodeEvent' => 'AllSuccess'],
+            'Priority' => 0,
+            'ErrorCatch' => false,
+        ];
+
+        return [
+            'Name' => $template['Name'] ?? '' ?: self::H264_WORKFLOW_NAME,
+            'Description' => $template['Description'] ?? '' ?: '上传后自动转码为 H.264 MP4，保障各端浏览器直接播放',
+            'SkipCallback' => (bool)($template['SkipCallback'] ?? false),
+            'SkipUpdateVideoStatus' => (bool)($template['SkipUpdateVideoStatus'] ?? false),
+            'Activities' => $activities,
+        ];
+    }
+
+    /**
+     * 备份工作流模板原始配置，便于回滚
+     *
+     * @param array $template
+     * @return string 备份文件路径
+     */
+    protected function backupWorkflowTemplate(array $template)
+    {
+        $templateId = (string)($template['TemplateId'] ?? 'unknown');
+
+        $dir = storage_path('backup/volc_workflow');
+
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0777, true);
+        }
+
+        $file = $dir . '/' . $templateId . '-' . date('YmdHis') . '.json';
+
+        return @file_put_contents($file, kg_json_encode($template)) ? $file : '';
+    }
+
+    /**
+     * 更新单个点播配置项并刷新缓存
+     *
+     * @param string $key
+     * @param string $value
+     * @return void
+     */
+    protected function updateVodSetting($key, $value)
+    {
+        $settingRepo = new \App\Repos\Setting();
+
+        $item = $settingRepo->findItem('vod', $key);
+
+        if ($item) {
+            $item->item_value = $value;
+            $item->update();
+        } else {
+            $item = new \App\Models\Setting();
+            $item->section = 'vod';
+            $item->item_key = $key;
+            $item->item_value = $value;
+            $item->create();
+        }
+
+        $cache = new \App\Caches\Setting();
+
+        $cache->rebuild('vod');
+
+        $this->settings[$key] = $value;
+    }
+
+    /**
+     * 清理播放地址缓存(转码结果变更后调用)
+     *
+     * @param string $fileId
+     * @return void
+     */
+    public function clearPlayUrlCache($fileId)
+    {
+        if (empty($fileId)) return;
+
+        $redis = $this->getRedis();
+
+        if (!$redis) return;
+
+        $redis->del("vod:play_urls:{$fileId}");
+
+        $redis->del("vod:play_urls_miss:{$fileId}");
+    }
+
+    /**
+     * 判断视频是否需要重新转码为 H.264
+     *
+     * 仅当源片为浏览器不支持的编码(如 HEVC)且尚无可播放转码流时返回 true
+     *
+     * @param string $fileId
+     * @return bool
+     */
+    public function needsH264Transcode($fileId)
+    {
+        if (empty($fileId)) return false;
+
+        $info = $this->client->getMediaInfos($fileId);
+
+        $media = $info['MediaInfoList'][0] ?? [];
+
+        if (empty($media)) return false;
+
+        $sourceCodec = strtolower((string)($media['SourceInfo']['Codec'] ?? ''));
+
+        if ($this->isPlayableCodec($sourceCodec)) return false;
+
+        foreach (($media['TranscodeInfos'] ?? []) as $item) {
+            $codec = strtolower((string)($item['VideoStreamMeta']['Codec'] ?? ''));
+            if ($codec !== '' && $this->isPlayableCodec($codec)) return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * 对指定视频重新触发 H.264 转码
+     *
+     * @param string $fileId
+     * @return string|bool 工作流运行ID
+     */
+    public function retranscodeToH264($fileId)
+    {
+        $runId = $this->client->startWorkflow($fileId);
+
+        if (!$runId) return false;
+
+        $this->clearPlayUrlCache($fileId);
+
+        $this->logger->info("Volc Retranscode: Vid={$fileId} 已触发 H.264 转码, RunId={$runId}");
+
+        return $runId;
     }
 
     /**

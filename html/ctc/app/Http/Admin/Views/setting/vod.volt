@@ -42,6 +42,17 @@
                 <input class="layui-input" type="text" name="volc_trans_template" value="{{ vod.volc_trans_template }}" placeholder="火山引擎点播工作流模板 ID（可选，上传完成后自动触发）">
             </div>
         </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">H.264 转码</label>
+            <div class="layui-input-block">
+                <button type="button" class="layui-btn layui-btn-primary" id="h264-check-btn">检测编码配置</button>
+                <button type="button" class="layui-btn" id="h264-apply-btn">切换为 H.264 转码</button>
+                <div class="layui-font-gray" style="margin-top:8px;line-height:20px;">
+                    上传的视频（含 HEVC/H.265 源片）将自动转码为 H.264 编码的 MP4（720P/480P/360P，只降不升），保障浏览器与移动端直接播放；
+                    原工作流的封面截图、水印等配置会自动保留，切换前会备份原配置。
+                </div>
+            </div>
+        </div>
 
         <fieldset class="layui-elem-field layui-field-title">
             <legend>主分发配置</legend>
@@ -112,10 +123,11 @@
 
     <script>
 
-        layui.use(['jquery', 'form'], function () {
+        layui.use(['jquery', 'form', 'layer'], function () {
 
             var $ = layui.jquery;
             var form = layui.form;
+            var layer = layui.layer;
 
             form.on('radio(key_anti_enabled)', function (data) {
                 var block = $('#key-anti-block');
@@ -124,6 +136,47 @@
                 } else {
                     block.hide();
                 }
+            });
+
+            $('#h264-check-btn').on('click', function () {
+                var btn = $(this);
+                btn.attr('disabled', 'disabled');
+                $.ajax({
+                    type: 'POST',
+                    url: '{{ url({'for':'admin.setting.vod_h264_check'}) }}',
+                    dataType: 'json',
+                    success: function (res) {
+                        layer.alert(res.msg || '检测完成', {title: '编码检测结果'});
+                    },
+                    error: function () {
+                        layer.msg('检测请求失败');
+                    },
+                    complete: function () {
+                        btn.removeAttr('disabled');
+                    }
+                });
+            });
+
+            $('#h264-apply-btn').on('click', function () {
+                var btn = $(this);
+                layer.confirm('确定将上传转码工作流切换为 H.264 编码？切换后新上传的视频将转码为 H.264 MP4。', {icon: 3, title: '提示'}, function (index) {
+                    layer.close(index);
+                    btn.attr('disabled', 'disabled').text('提交中···');
+                    $.ajax({
+                        type: 'POST',
+                        url: '{{ url({'for':'admin.setting.vod_h264'}) }}',
+                        dataType: 'json',
+                        success: function (res) {
+                            layer.alert(res.msg || '操作完成', {title: res.code === 0 ? '切换成功' : '切换失败'});
+                        },
+                        error: function () {
+                            layer.msg('请求失败，请稍后重试');
+                        },
+                        complete: function () {
+                            btn.removeAttr('disabled').text('切换为 H.264 转码');
+                        }
+                    });
+                });
             });
 
         });

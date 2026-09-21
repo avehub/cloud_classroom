@@ -1171,6 +1171,18 @@ class AuthNode extends Service
                             'type' => 'menu',
                             'route' => 'admin.setting.live',
                         ],
+                        [
+                            'id' => '5-2-7',
+                            'title' => '点播编码检测',
+                            'type' => 'button',
+                            'route' => 'admin.setting.vod_h264_check',
+                        ],
+                        [
+                            'id' => '5-2-8',
+                            'title' => '点播H.264转码',
+                            'type' => 'button',
+                            'route' => 'admin.setting.vod_h264',
+                        ],
                     ],
                 ],
                 [

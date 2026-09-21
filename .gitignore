@@ -36,6 +36,7 @@
 /html/ctc/storage/log 
 /html/ctc/storage/tmp 
 /html/ctc/storage/upload
+/html/ctc/storage/backup
 /html/ctc/vendor
 /html/ctc/config/xs.course.ini
 /html/ctc/config/xs.article.ini

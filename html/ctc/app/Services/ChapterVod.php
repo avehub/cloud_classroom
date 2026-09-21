@@ -53,11 +53,24 @@ class ChapterVod extends Service
 
         if (empty($transcode)) return [];
 
+        // 按分辨率由高到低排序后依次映射为 高清/标清/极速，避免多档转码流相互覆盖
+        usort($transcode, function ($a, $b) {
+            return intval($b['height'] ?? 0) <=> intval($a['height'] ?? 0);
+        });
+
+        $types = ['hd', 'sd', 'fd'];
+
         $result = [];
 
-        foreach ($transcode as $file) {
+        foreach ($transcode as $key => $file) {
+            if (empty($file['url'])) continue;
+
             $file['url'] = $vodService->getPlayUrl($file['url']);
-            $type = $this->getDefinitionType($file['height']);
+
+            $type = isset($types[$key]) ? $types[$key] : $this->getDefinitionType($file['height']);
+
+            if (isset($result[$type])) continue;
+
             $result[$type] = $file;
         }
 
