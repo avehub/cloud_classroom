@@ -954,7 +954,8 @@
 
 .filter-group {
     display: flex;
-    height: 40px;
+    align-items: flex-start;
+    min-height: 40px;
     line-height: 40px;
     padding-bottom: 5px;
 }
