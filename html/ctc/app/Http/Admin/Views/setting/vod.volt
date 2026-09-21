@@ -43,12 +43,21 @@
             </div>
         </div>
         <div class="layui-form-item">
+            <label class="layui-form-label">H.264 模板</label>
+            <div class="layui-input-block">
+                <input class="layui-input" type="text" name="volc_h264_templates" value="{{ vod.volc_h264_templates }}" placeholder="自定义 H.264 转码模板，格式：分辨率:模板ID，多个用逗号分隔，如 1080:5c446e0d244e4df79372379ea083c2c0">
+                <div class="layui-font-gray" style="margin-top:8px;line-height:20px;">
+                    火山官方预设的 H.264 MP4 模板最高只有 720P，需要 1080P 请在点播控制台自建 H.264 转码模板后填入此处（保存后再点击下方的切换按钮生效）。
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item">
             <label class="layui-form-label">H.264 转码</label>
             <div class="layui-input-block">
                 <button type="button" class="layui-btn layui-btn-primary" id="h264-check-btn">检测编码配置</button>
                 <button type="button" class="layui-btn" id="h264-apply-btn">切换为 H.264 转码</button>
                 <div class="layui-font-gray" style="margin-top:8px;line-height:20px;">
-                    上传的视频（含 HEVC/H.265 源片）将自动转码为 H.264 编码的 MP4（720P/480P/360P，只降不升），保障浏览器与移动端直接播放；
+                    上传的视频（含 HEVC/H.265 源片）将自动转码为 H.264 编码的 MP4（最多三档，只降不升），保障浏览器与移动端直接播放；
                     原工作流的封面截图、水印等配置会自动保留，切换前会备份原配置。
                 </div>
             </div>

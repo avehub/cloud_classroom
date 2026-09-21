@@ -87,7 +87,7 @@ class VodTranscodeTask extends Task
 
         $inspect = $vodService->inspectWorkflowTemplate();
 
-        if (empty($inspect['h264_ready'])) {
+        if (empty($inspect['h264_output'])) {
             $this->errorPrint('当前工作流模板未输出 H.264，请先执行: php console.php --task=vod_transcode --action=h264');
             return;
         }

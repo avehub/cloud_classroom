@@ -48,6 +48,18 @@ class Vod extends Service
         ['height' => 360, 'template_id' => '5a36ec526baa43d49b113b40aadef952'],
     ];
 
+    /**
+     * 优先采用的转码分辨率(官方预设最高仅 720P，1080P 需通过自定义模板补充)
+     *
+     * @var array
+     */
+    const H264_PREFERRED_HEIGHTS = [1080, 720, 480, 360];
+
+    /**
+     * 转码档位上限，与前台 高清/标清/极速 三档保持一致
+     */
+    const H264_MAX_RUNGS = 3;
+
     /** @var VolcVodClient */
     protected $client;
 
@@ -753,22 +765,33 @@ class Vod extends Service
             $presets = self::H264_MP4_PRESETS;
         }
 
-        // 优先采用 720P/480P/360P 三档，与前台 高清/标清/极速 一一对应
-        $preferred = array_column(self::H264_MP4_PRESETS, 'height');
-
-        $filtered = array_values(array_filter($presets, function ($preset) use ($preferred) {
-            return in_array((int)$preset['height'], $preferred, true);
+        // 官方预设档位较多时，只保留常用的几档
+        $filtered = array_values(array_filter($presets, function ($preset) {
+            return in_array((int)$preset['height'], self::H264_PREFERRED_HEIGHTS, true);
         }));
 
         if (!empty($filtered)) {
             $presets = $filtered;
         }
 
+        // 自定义模板(如控制台自建的 1080P H.264 模板)按分辨率覆盖或补充预设档位
+        $merged = [];
+
+        foreach ($presets as $preset) {
+            $merged[(int)$preset['height']] = $preset;
+        }
+
+        foreach ($this->getCustomH264Templates() as $custom) {
+            $merged[(int)$custom['height']] = $custom;
+        }
+
+        $presets = array_values($merged);
+
         usort($presets, function ($a, $b) {
             return $b['height'] <=> $a['height'];
         });
 
-        $presets = array_slice($presets, 0, count(self::H264_MP4_PRESETS));
+        $presets = array_slice($presets, 0, self::H264_MAX_RUNGS);
 
         $ladder = [];
 
@@ -787,6 +810,42 @@ class Vod extends Service
         $this->h264Ladder = $ladder;
 
         return $ladder;
+    }
+
+    /**
+     * 解析自定义 H.264 转码模板配置
+     *
+     * 配置项 volc_h264_templates 格式为 "分辨率:模板ID"，多个以逗号/空格分隔，
+     * 例如: 1080:5c446e0d244e4df79372379ea083c2c0
+     *
+     * @return array
+     */
+    public function getCustomH264Templates()
+    {
+        $value = trim((string)($this->settings['volc_h264_templates'] ?? ''));
+
+        if ($value === '') return [];
+
+        $result = [];
+
+        $pairs = preg_split('/[\s,;，；]+/u', $value);
+
+        foreach ($pairs as $pair) {
+            $pair = trim($pair);
+
+            if ($pair === '') continue;
+
+            if (!preg_match('/^(\d{3,4})[:：]([0-9a-zA-Z]+)$/u', $pair, $matches)) {
+                $this->logger->warning("Volc H264 Templates: 配置项格式不正确已忽略 {$pair}，正确格式为 分辨率:模板ID");
+                continue;
+            }
+
+            $height = (int)$matches[1];
+
+            $result[$height] = ['height' => $height, 'template_id' => $matches[2]];
+        }
+
+        return array_values($result);
     }
 
     /**
@@ -840,6 +899,7 @@ class Vod extends Service
             'template_id' => $templateId,
             'name' => '',
             'exists' => false,
+            'h264_output' => false,
             'h264_ready' => false,
             'transcode_activities' => [],
             'msg' => '未配置工作流模板',
@@ -873,10 +933,15 @@ class Vod extends Service
             'template_id' => $template['TemplateId'] ?? '',
             'name' => $template['Name'] ?? '',
             'exists' => true,
+            'h264_output' => false,
             'h264_ready' => false,
             'transcode_activities' => [],
             'msg' => '',
         ];
+
+        $appliedIds = [];
+
+        $foreignNodes = [];
 
         foreach (($template['Activities'] ?? []) as $activity) {
             $type = (string)($activity['Type'] ?? '');
@@ -899,11 +964,29 @@ class Vod extends Service
             ];
 
             if ($isH264) {
-                $result['h264_ready'] = true;
+                $result['h264_output'] = true;
+                $appliedIds[] = $transcodeId;
+            } else {
+                $foreignNodes[] = $name ?: $type;
             }
         }
 
-        $result['msg'] = $result['h264_ready'] ? '已包含 H.264 转码节点' : '未包含 H.264 MP4 转码节点';
+        sort($appliedIds);
+
+        sort($h264Ids);
+
+        // 与期望梯度完全一致才算就绪，档位变化(如新增 1080P)时需要重新应用
+        $result['h264_ready'] = empty($foreignNodes) && array_values(array_unique($appliedIds)) === array_values(array_unique($h264Ids));
+
+        if (!empty($foreignNodes)) {
+            $result['msg'] = '存在非 H.264 转码节点: ' . implode('、', $foreignNodes);
+        } elseif (!$result['h264_output']) {
+            $result['msg'] = '未包含 H.264 MP4 转码节点';
+        } elseif (!$result['h264_ready']) {
+            $result['msg'] = 'H.264 转码档位与当前配置不一致，需重新应用';
+        } else {
+            $result['msg'] = '已按 H.264 转码(' . implode('/', array_column($ladder, 'height')) . 'P)';
+        }
 
         return $result;
     }
@@ -944,7 +1027,7 @@ class Vod extends Service
                     'success' => true,
                     'changed' => false,
                     'template_id' => $templateId,
-                    'msg' => sprintf('工作流模板「%s」已是 H.264 转码配置', $inspect['name']),
+                    'msg' => sprintf('工作流模板「%s」已是 H.264 转码配置(%s)', $inspect['name'], $inspect['msg']),
                 ];
             }
 
