@@ -59,6 +59,12 @@ class EditorStorage extends Storage
 
         $content = base64_decode($encodeContent);
 
+        $mime = FileInfo::getMimeTypeByExt($extension);
+
+        $compressor = new ImageCompressor();
+
+        $content = $compressor->compressString($content, $mime);
+
         $md5 = md5($content);
 
         $uploadRepo = new UploadRepo();
@@ -74,7 +80,7 @@ class EditorStorage extends Storage
                 $upload = new UploadModel();
 
                 $upload->type = UploadModel::TYPE_CONTENT_IMG;
-                $upload->mime = FileInfo::getMimeTypeByExt($extension);
+                $upload->mime = $mime;
                 $upload->name = pathinfo($uploadPath, PATHINFO_BASENAME);
                 $upload->size = strlen($content);
                 $upload->path = $uploadPath;
@@ -103,6 +109,12 @@ class EditorStorage extends Storage
 
         $keyName = $this->generateFileName($extension, '/img/content/');
 
+        $mime = FileInfo::getMimeTypeByExt($extension);
+
+        $compressor = new ImageCompressor();
+
+        $content = $compressor->compressString($content, $mime);
+
         $md5 = md5($content);
 
         $uploadRepo = new UploadRepo();
@@ -118,7 +130,7 @@ class EditorStorage extends Storage
                 $upload = new UploadModel();
 
                 $upload->type = UploadModel::TYPE_CONTENT_IMG;
-                $upload->mime = FileInfo::getMimeTypeByExt($extension);
+                $upload->mime = $mime;
                 $upload->name = pathinfo($uploadPath, PATHINFO_BASENAME);
                 $upload->size = strlen($content);
                 $upload->path = $uploadPath;

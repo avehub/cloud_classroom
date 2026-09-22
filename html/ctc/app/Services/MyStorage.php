@@ -157,7 +157,25 @@ class MyStorage extends Storage
                     throw new InvalidArgumentException($message);
                 }
 
-                $md5 = md5_file($file->getTempName());
+                $tempName = $file->getTempName();
+
+                $compressedTemp = null;
+
+                if ($mimeType == self::MIME_IMAGE && strpos($file->getRealType(), 'image/') === 0) {
+
+                    $compressor = new ImageCompressor();
+
+                    $compressedTemp = tempnam(sys_get_temp_dir(), 'cmp');
+
+                    if (!$compressor->compressFile($tempName, $compressedTemp)) {
+                        @unlink($compressedTemp);
+                        $compressedTemp = null;
+                    }
+                }
+
+                $uploadTempName = $compressedTemp ?: $tempName;
+
+                $md5 = md5_file($uploadTempName);
 
                 $upload = $uploadRepo->findByMd5($md5);
 
@@ -173,9 +191,10 @@ class MyStorage extends Storage
                         $keyName = $prefix . '/' . $fileName;
                     }
 
-                    $path = $this->putFile($keyName, $file->getTempName());
+                    $path = $this->putFile($keyName, $uploadTempName);
 
                     if (!$path) {
+                        if ($compressedTemp) @unlink($compressedTemp);
                         throw new RuntimeException('Upload File Failed');
                     }
 
@@ -183,13 +202,15 @@ class MyStorage extends Storage
 
                     $upload->name = $name;
                     $upload->mime = $file->getRealType();
-                    $upload->size = $file->getSize();
+                    $upload->size = $compressedTemp ? filesize($compressedTemp) : $file->getSize();
                     $upload->type = $uploadType;
                     $upload->path = $path;
                     $upload->md5 = $md5;
 
                     $upload->create();
                 }
+
+                if ($compressedTemp) @unlink($compressedTemp);
 
                 $list[] = $upload;
             }
