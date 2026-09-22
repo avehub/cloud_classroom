@@ -55,15 +55,21 @@ class EditorStorage extends Storage
 
     protected function uploadBase64Image($encodeContent, $extension)
     {
-        $keyName = $this->generateFileName($extension, '/img/content/');
-
         $content = base64_decode($encodeContent);
 
         $mime = FileInfo::getMimeTypeByExt($extension);
 
         $compressor = new ImageCompressor();
 
-        $content = $compressor->compressString($content, $mime);
+        $compressed = $compressor->compressString($content, $mime);
+
+        $content = $compressed['data'];
+
+        $mime = $compressed['mime'];
+
+        $extension = $compressed['extension'] ?: $extension;
+
+        $keyName = $this->generateFileName($extension, '/img/content/');
 
         $md5 = md5($content);
 
@@ -107,13 +113,19 @@ class EditorStorage extends Storage
 
         if ($content === false) return $remoteUrl;
 
-        $keyName = $this->generateFileName($extension, '/img/content/');
-
         $mime = FileInfo::getMimeTypeByExt($extension);
 
         $compressor = new ImageCompressor();
 
-        $content = $compressor->compressString($content, $mime);
+        $compressed = $compressor->compressString($content, $mime);
+
+        $content = $compressed['data'];
+
+        $mime = $compressed['mime'];
+
+        $extension = $compressed['extension'] ?: $extension;
+
+        $keyName = $this->generateFileName($extension, '/img/content/');
 
         $md5 = md5($content);
 

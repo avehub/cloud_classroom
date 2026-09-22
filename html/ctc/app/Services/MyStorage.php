@@ -159,15 +159,27 @@ class MyStorage extends Storage
 
                 $tempName = $file->getTempName();
 
+                $mime = $file->getRealType();
+
+                $extension = $this->getFileExtension($file->getName());
+
                 $compressedTemp = null;
 
-                if ($mimeType == self::MIME_IMAGE && strpos($file->getRealType(), 'image/') === 0) {
+                $compressedSize = 0;
+
+                if ($mimeType == self::MIME_IMAGE && strpos($mime, 'image/') === 0) {
 
                     $compressor = new ImageCompressor();
 
                     $compressedTemp = tempnam(sys_get_temp_dir(), 'cmp');
 
-                    if (!$compressor->compressFile($tempName, $compressedTemp)) {
+                    $compressed = $compressor->compressFile($tempName, $compressedTemp);
+
+                    if ($compressed) {
+                        $mime = $compressed['mime'];
+                        $extension = $compressed['extension'] ?: $extension;
+                        $compressedSize = $compressed['size'];
+                    } else {
                         @unlink($compressedTemp);
                         $compressedTemp = null;
                     }
@@ -182,8 +194,6 @@ class MyStorage extends Storage
                 if (!$upload) {
 
                     $name = $this->filter->sanitize($file->getName(), ['trim', 'string']);
-
-                    $extension = $this->getFileExtension($file->getName());
 
                     if (empty($fileName)) {
                         $keyName = $this->generateFileName($extension, $prefix);
@@ -201,8 +211,8 @@ class MyStorage extends Storage
                     $upload = new UploadModel();
 
                     $upload->name = $name;
-                    $upload->mime = $file->getRealType();
-                    $upload->size = $compressedTemp ? filesize($compressedTemp) : $file->getSize();
+                    $upload->mime = $mime;
+                    $upload->size = $compressedTemp ? $compressedSize : $file->getSize();
                     $upload->type = $uploadType;
                     $upload->path = $path;
                     $upload->md5 = $md5;

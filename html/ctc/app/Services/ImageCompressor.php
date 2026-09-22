@@ -31,7 +31,7 @@ class ImageCompressor extends Service
      *
      * @param string $sourcePath
      * @param string $destPath
-     * @return bool 是否写入了压缩后的文件
+     * @return array|false 未压缩返回 false；压缩成功返回 ['mime' => ..., 'extension' => ..., 'size' => ...]
      */
     public function compressFile($sourcePath, $destPath)
     {
@@ -41,57 +41,93 @@ class ImageCompressor extends Service
             return false;
         }
 
-        $compressed = $this->compressString($data, $this->detectMime($data));
+        $result = $this->compressString($data, $this->detectMime($data));
 
-        if ($compressed === $data) {
+        if ($result['data'] === $data) {
             return false;
         }
 
-        return @file_put_contents($destPath, $compressed) !== false;
+        if (@file_put_contents($destPath, $result['data']) === false) {
+            return false;
+        }
+
+        return [
+            'mime' => $result['mime'],
+            'extension' => $result['extension'],
+            'size' => strlen($result['data']),
+        ];
     }
 
     /**
-     * 压缩图片二进制内容，未压缩时原样返回
+     * 压缩图片二进制内容
+     *
+     * 无透明通道的 PNG 会转换为 JPEG 以保证达标，调用方须使用返回的 mime/extension
      *
      * @param string $data
      * @param string $mime
-     * @return string
+     * @return array ['data' => string, 'mime' => string, 'extension' => string|null]
      */
     public function compressString($data, $mime)
     {
+        $mime = $this->detectMime($data) ?: $mime;
+
+        $result = [
+            'data' => $data,
+            'mime' => $mime,
+            'extension' => $this->mimeToExtension($mime),
+        ];
+
         if (strlen($data) <= self::TARGET_SIZE) {
-            return $data;
+            return $result;
         }
 
         $type = $this->detectType($data, $mime);
 
         if (!$type || !$this->isSupported($type)) {
-            return $data;
+            return $result;
         }
 
         if ($type == IMAGETYPE_GIF && $this->isAnimatedGif($data)) {
-            return $data;
+            return $result;
         }
 
         $image = $this->createImage($data);
 
         if (!$image) {
-            return $data;
+            return $result;
+        }
+
+        /**
+         * 无透明通道的 PNG 转 JPEG 循环降质（PNG 无损重编码无法有效缩减体积）
+         */
+        if ($type == IMAGETYPE_PNG && !$this->hasAlphaChannel($data, $image)) {
+
+            $jpeg = $this->convertToJpeg($image);
+
+            if ($jpeg !== false && strlen($jpeg) < strlen($data)) {
+                imagedestroy($image);
+
+                return [
+                    'data' => $jpeg,
+                    'mime' => 'image/jpeg',
+                    'extension' => 'jpg',
+                ];
+            }
         }
 
         $best = null;
 
         for ($quality = self::QUALITY_START; $quality >= self::QUALITY_MIN; $quality -= self::QUALITY_STEP) {
 
-            $result = $this->encodeImage($image, $type, $quality);
+            $encoded = $this->encodeImage($image, $type, $quality);
 
-            if ($result === false) {
+            if ($encoded === false) {
                 break;
             }
 
-            $best = $result;
+            $best = $encoded;
 
-            if (strlen($result) <= self::TARGET_SIZE) {
+            if (strlen($encoded) <= self::TARGET_SIZE) {
                 break;
             }
 
@@ -106,10 +142,12 @@ class ImageCompressor extends Service
         imagedestroy($image);
 
         if ($best === null || strlen($best) >= strlen($data)) {
-            return $data;
+            return $result;
         }
 
-        return $best;
+        $result['data'] = $best;
+
+        return $result;
     }
 
     /**
@@ -153,6 +191,27 @@ class ImageCompressor extends Service
     }
 
     /**
+     * mime 转扩展名
+     *
+     * @param string $mime
+     * @return string|null
+     */
+    protected function mimeToExtension($mime)
+    {
+        $map = [
+            'image/jpeg' => 'jpg',
+            'image/pjpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/bmp' => 'bmp',
+            'image/x-ms-bmp' => 'bmp',
+            'image/gif' => 'gif',
+        ];
+
+        return $map[$mime] ?? null;
+    }
+
+    /**
      * 是否为支持压缩的类型（svg/psd/tiff/ico 等不支持）
      *
      * @param int $type
@@ -180,6 +239,99 @@ class ImageCompressor extends Service
     protected function isAnimatedGif($data)
     {
         return substr_count($data, "\x00\x21\xF9\x04") > 1;
+    }
+
+    /**
+     * PNG 是否含透明通道
+     *
+     * 优先解析 IHDR color type（0/2 无透明，3 看 tRNS，4/6 保守视为含透明），
+     * 头部解析失败退回像素抽样
+     *
+     * @param string $data
+     * @param resource $image
+     * @return bool
+     */
+    protected function hasAlphaChannel($data, $image)
+    {
+        if (substr($data, 0, 8) === "\x89PNG\r\n\x1a\n" && substr($data, 12, 4) === 'IHDR' && strlen($data) > 25) {
+
+            $colorType = ord($data[25]);
+
+            if (in_array($colorType, [0, 2])) {
+                return false;
+            }
+
+            if ($colorType == 3) {
+                return strpos($data, 'tRNS') !== false;
+            }
+
+            return true;
+        }
+
+        $width = imagesx($image);
+
+        $height = imagesy($image);
+
+        $stepX = max(1, (int)($width / 100));
+
+        $stepY = max(1, (int)($height / 100));
+
+        for ($y = 0; $y < $height; $y += $stepY) {
+            for ($x = 0; $x < $width; $x += $stepX) {
+                $rgba = imagecolorat($image, $x, $y);
+                if ((($rgba >> 24) & 0x7F) > 0) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 图像转 JPEG（白底防边缘杂色），循环降质
+     *
+     * @param resource $image
+     * @return string|false
+     */
+    protected function convertToJpeg($image)
+    {
+        $width = imagesx($image);
+
+        $height = imagesy($image);
+
+        $canvas = imagecreatetruecolor($width, $height);
+
+        if (!$canvas) {
+            return false;
+        }
+
+        $white = imagecolorallocate($canvas, 255, 255, 255);
+
+        imagefill($canvas, 0, 0, $white);
+
+        imagecopy($canvas, $image, 0, 0, 0, 0, $width, $height);
+
+        $best = null;
+
+        for ($quality = self::QUALITY_START; $quality >= self::QUALITY_MIN; $quality -= self::QUALITY_STEP) {
+
+            $encoded = $this->encodeImage($canvas, IMAGETYPE_JPEG, $quality);
+
+            if ($encoded === false) {
+                break;
+            }
+
+            $best = $encoded;
+
+            if (strlen($encoded) <= self::TARGET_SIZE) {
+                break;
+            }
+        }
+
+        imagedestroy($canvas);
+
+        return $best === null ? false : $best;
     }
 
     /**
