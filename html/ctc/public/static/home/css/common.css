@@ -482,7 +482,8 @@
 }
 
 .search-course-card .info {
-    width: 500px;
+    flex: 1;
+    min-width: 0;
 }
 
 .search-course-card .title {
@@ -988,6 +989,7 @@
 }
 
 .filter-group .title {
+    flex-shrink: 0;
     width: 50px;
     font-weight: 700;
 }
@@ -2292,4 +2294,102 @@
 
 .gift-details {
     min-height: 450px;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 1200px) {
+    .layout-main {
+        flex-direction: column;
+    }
+
+    .layout-content,
+    .layout-sidebar,
+    .my-sidebar,
+    .my-content {
+        width: 100%;
+    }
+
+    .layout-sidebar,
+    .my-content {
+        margin-top: 20px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .account-form {
+        width: 100%;
+    }
+
+    .account-form .verify-input-inline {
+        width: calc(100% - 125px);
+        margin-right: 5px;
+    }
+
+    .account-form .verify-btn-inline {
+        width: 120px;
+    }
+
+    .search-form .layui-form-item {
+        display: flex;
+    }
+
+    .search-form .layui-form-item .layui-inline:first-child {
+        flex: 1;
+        margin-right: 10px;
+    }
+
+    .search-form .query-input {
+        width: 100%;
+    }
+
+    .search-form .search-btn {
+        padding: 0 15px;
+    }
+
+    .course-meta {
+        flex-wrap: wrap;
+    }
+
+    .course-meta .info {
+        width: 100%;
+        padding-top: 10px;
+    }
+
+    .course-meta .ratings {
+        padding-top: 10px;
+    }
+
+    .course-card {
+        height: auto;
+    }
+
+    .course-card .cover img {
+        width: 100%;
+        height: auto;
+    }
+
+    .player-wrap,
+    .dplayer {
+        width: 100%;
+        height: 56.25vw;
+        max-height: 428px;
+    }
+
+    .security-form,
+    .consult-info .item .title,
+    .consult-info .item .content {
+        width: 100%;
+    }
+
+    .security-form .verify-input-inline {
+        width: calc(100% - 125px);
+    }
+
+    .review-table .title,
+    .review-table .content,
+    .consult-table .content,
+    .user-profile .about {
+        width: auto;
+        max-width: 100%;
+    }
 }
