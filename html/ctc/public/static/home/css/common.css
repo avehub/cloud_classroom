@@ -2321,12 +2321,24 @@
     }
 
     .account-form .verify-input-inline {
-        width: calc(100% - 125px);
-        margin-right: 5px;
+        display: inline-block;
+        float: none;
+        left: 0;
+        width: calc(100% - 126px) !important;
+        margin: 0 5px 0 0;
+        vertical-align: middle;
     }
 
     .account-form .verify-btn-inline {
-        width: 120px;
+        display: inline-block;
+        width: 112px !important;
+        margin: 0;
+        vertical-align: middle;
+    }
+
+    .account-form .verify-btn-inline .layui-btn {
+        width: 100%;
+        padding: 0;
     }
 
     .search-form .layui-form-item {
@@ -2382,7 +2394,19 @@
     }
 
     .security-form .verify-input-inline {
-        width: calc(100% - 125px);
+        display: inline-block;
+        float: none;
+        left: 0;
+        width: calc(100% - 131px) !important;
+        margin: 0 5px 0 0;
+        vertical-align: middle;
+    }
+
+    .security-form .verify-btn-inline {
+        display: inline-block;
+        width: 120px !important;
+        margin: 0;
+        vertical-align: middle;
     }
 
     .review-table .title,
