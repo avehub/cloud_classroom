@@ -18,6 +18,8 @@ rm -rf html/ctc/storage/cache/annotations/* 2>/dev/null || true
 docker compose exec -T php chown -R www-data:www-data /var/www/html/ctc/storage 2>/dev/null || true
 
 echo "==> 5. 重启 PHP-FPM 与刷新 OPcache..."
+# .env（env_file）变更需重建容器才会生效，配置未变化时该命令为空操作
+docker compose up -d php 2>/dev/null || true
 docker compose exec -T php supervisorctl restart php
 
 echo "==> 6. 重启 WebSocket 常驻服务..."
