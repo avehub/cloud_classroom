@@ -34,6 +34,14 @@ $config['log']['trace'] = (getenv('APP_LOG_TRACE') === 'true');
 $config['base_uri'] = getenv('APP_BASE_URI') ?: '/';
 
 /**
+ * 站点基准地址（含协议与域名，如：https://www.example.com），结尾的"/"会被自动裁剪
+ *
+ * 留空时依次回退到：后台"站点设置-站点URL" > 当前请求头（含 X-Forwarded-*）
+ * 生产环境务必配置，避免健康检查/监控探测等非业务请求污染缓存中的资源地址
+ */
+$config['site_url'] = getenv('SITE_URL') ?: '';
+
+/**
  * 静态资源根地址，必须以"/"结尾
  */
 $config['static_base_uri'] = getenv('APP_STATIC_BASE_URI') ?: '/static/';

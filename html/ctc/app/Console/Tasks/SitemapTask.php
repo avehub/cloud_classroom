@@ -58,7 +58,9 @@ class SitemapTask extends Task
 
         $settings = $service->getSettings('site');
 
-        return $settings['url'] ?? '';
+        $url = $settings['url'] ?? '';
+
+        return $url ?: kg_site_url();
     }
 
     protected function addIndex()

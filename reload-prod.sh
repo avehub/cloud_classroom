@@ -24,6 +24,10 @@ echo "==> 6. 重启 WebSocket 常驻服务..."
 docker compose exec -T php supervisorctl restart websocket
 
 echo "==> 7. 平滑重载 Nginx..."
+docker compose up -d nginx 2>/dev/null || true
 docker compose exec -T nginx nginx -s reload 2>/dev/null || true
+
+echo "==> 8. 重建首页缓存（清除历史请求上下文写入的资源地址）..."
+docker compose exec -T -w /var/www/html/ctc php php console.php maintain rebuild_index_course_cache 2>/dev/null || true
 
 echo "✅ 更新完成，服务已全部正常就绪！"

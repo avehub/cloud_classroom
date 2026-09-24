@@ -160,14 +160,115 @@ function kg_ip2region($ip)
 /**
  * 获取站点基准URL
  *
+ * 解析优先级：后台站点设置(site.url) > 环境变量(SITE_URL) > 当前请求(含反向代理头)
+ *
+ * 该结果会被 Model::afterFetch 写入实体字段（如课程封面），并被 App\Caches\* 持久化到 Redis，
+ * 因此必须与"发起请求的 Host"解耦，否则任何以 localhost 访问的请求（容器健康检查、监控探测等）
+ * 都会把 http://localhost 前缀写进缓存，导致线上图片地址错误。
+ *
  * @return string
  */
 function kg_site_url()
 {
-    $scheme = filter_input(INPUT_SERVER, 'REQUEST_SCHEME');
-    $host = filter_input(INPUT_SERVER, 'HTTP_HOST');
+    /**
+     * 配置来源的基准URL与请求无关，可在常驻进程内安全复用
+     */
+    static $canonicalUrl = null;
+
+    if ($canonicalUrl !== null) {
+        return $canonicalUrl;
+    }
+
+    $url = kg_configured_site_url();
+
+    if ($url) {
+        $canonicalUrl = $url;
+
+        return $canonicalUrl;
+    }
+
+    $host = kg_request_host();
+
+    if (!$host) return '';
+
+    $scheme = kg_request_scheme() ?: 'http';
 
     return sprintf('%s://%s', $scheme, $host);
+}
+
+/**
+ * 获取配置的站点基准URL（后台站点设置或环境变量）
+ *
+ * @return string
+ */
+function kg_configured_site_url()
+{
+    try {
+        $url = kg_setting('site', 'url');
+    } catch (\Throwable $e) {
+        $url = null;
+    }
+
+    if (!kg_is_http_url($url)) {
+        $url = kg_config('site_url');
+    }
+
+    if (!kg_is_http_url($url)) return '';
+
+    return rtrim(trim($url), '/');
+}
+
+/**
+ * 判断是否为完整的HTTP(S)地址
+ *
+ * @param mixed $url
+ * @return bool
+ */
+function kg_is_http_url($url)
+{
+    return is_string($url) && preg_match('#^https?://#i', $url) > 0;
+}
+
+/**
+ * 获取当前请求协议（兼容反向代理）
+ *
+ * @return string
+ */
+function kg_request_scheme()
+{
+    $protocol = filter_input(INPUT_SERVER, 'HTTP_X_FORWARDED_PROTO');
+
+    if ($protocol) {
+        $protocol = strtolower(trim(explode(',', $protocol)[0]));
+        if (in_array($protocol, ['http', 'https'])) return $protocol;
+    }
+
+    $https = filter_input(INPUT_SERVER, 'HTTPS');
+
+    if ($https && strtolower($https) != 'off') return 'https';
+
+    $scheme = filter_input(INPUT_SERVER, 'REQUEST_SCHEME');
+
+    return $scheme ? strtolower($scheme) : '';
+}
+
+/**
+ * 获取当前请求主机（兼容反向代理）
+ *
+ * @return string
+ */
+function kg_request_host()
+{
+    $host = filter_input(INPUT_SERVER, 'HTTP_X_FORWARDED_HOST');
+
+    if ($host) {
+        $host = trim(explode(',', $host)[0]);
+        if ($host) return $host;
+    }
+
+    $host = filter_input(INPUT_SERVER, 'HTTP_HOST');
+
+    return $host ? trim($host) : '';
 }
 
 /**
