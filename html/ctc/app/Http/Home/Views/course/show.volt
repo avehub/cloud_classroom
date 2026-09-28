@@ -35,8 +35,8 @@
             <div class="course-tab-wrap wrap">
                 <div class="layui-tabs course-tab">
                     <ul class="layui-tabs-header">
-                        <li class="layui-this">详情</li>
-                        <li>目录</li>
+                        <li class="layui-this">目录</li>
+                        <li>详情</li>
                         {% if show_tab_packages %}
                             <li>套餐<span class="tab-count">{{ course.package_count }}</span></li>
                         {% endif %}
@@ -52,10 +52,10 @@
                     </ul>
                     <div class="layui-tabs-body">
                         <div class="layui-tabs-item layui-show">
-                            <div class="course-details ke-content kg-zoom">{{ course.details }}</div>
+                            {{ partial('course/show_catalog') }}
                         </div>
                         <div class="layui-tabs-item">
-                            {{ partial('course/show_catalog') }}
+                            <div class="course-details ke-content kg-zoom">{{ course.details }}</div>
                         </div>
                         {% if show_tab_packages %}
                             {% set packages_url = url({'for':'home.course.packages','id':course.id}) %}
