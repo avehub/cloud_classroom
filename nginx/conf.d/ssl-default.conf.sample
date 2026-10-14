@@ -46,12 +46,16 @@ server {
         access_log off;
     }
 
+    # WebSocket 反向代理：HTTPS 站点下代码会下发 wss://域名/wss，
+    # 缺这段会导致前端 WebSocket 404。详见仓库根目录 SSL-ACME.md 第 4 节。
     location /wss {
         proxy_pass http://php:8282;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection "Upgrade";
         proxy_set_header X-Real-IP $remote_addr;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
     }
 
     location ~ \.php$ {
