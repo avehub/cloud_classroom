@@ -47,7 +47,7 @@ layui.use(['jquery', 'form', 'element', 'layer', 'helper'], function () {
     }, 600000);
 
     if (window.user.id > 0) {
-        setInterval(function () {
+        var notifyTimer = setInterval(function () {
             $.get('/uc/notify/stats', function (res) {
                 var $notifyDot = $('#notify-dot');
                 if (res.stats.notice_count > 0) {
@@ -57,8 +57,17 @@ layui.use(['jquery', 'form', 'element', 'layer', 'helper'], function () {
                 }
             });
         }, 60000);
-        setInterval(function () {
-            $.post('/uc/online');
+        var onlineTimer = setInterval(function () {
+            $.post('/uc/online', function (res) {
+                if (res.kicked) {
+                    clearInterval(onlineTimer);
+                    clearInterval(notifyTimer);
+                    layer.alert(res.msg, {icon: 2, title: '下线通知', closeBtn: 0}, function (index) {
+                        layer.close(index);
+                        window.location.href = '/account/login';
+                    });
+                }
+            });
         }, 60000);
     }
 

@@ -39,7 +39,7 @@ class UserConsoleController extends Controller
     {
         parent::beforeExecuteRoute($dispatcher);
 
-        if ($this->authUser->id == 0) {
+        if ($this->authUser->id == 0 && $dispatcher->getActionName() != 'online') {
             $dispatcher->forward([
                 'controller' => 'account',
                 'action' => 'login',
@@ -363,6 +363,24 @@ class UserConsoleController extends Controller
      */
     public function onlineAction()
     {
+        if ($this->authUser->id == 0) {
+            /**
+             * @var \App\Services\Auth\Home $auth
+             */
+            $auth = $this->getDI()->get('auth');
+
+            if ($auth->getKickedNotice()) {
+                $content = [
+                    'kicked' => 1,
+                    'msg' => '您的账号已在其他设备登录，如非本人操作请及时修改密码',
+                ];
+
+                return $this->jsonSuccess($content);
+            }
+
+            $this->unauthorized();
+        }
+
         $service = new OnlineService();
 
         $service->handle();
