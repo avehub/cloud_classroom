@@ -4,6 +4,8 @@
 namespace App\Http\Home\Controllers;
 
 use App\Http\Home\Services\Account as AccountService;
+use App\Http\Home\Services\Connect as ConnectService;
+use App\Models\Connect as ConnectModel;
 use App\Services\Logic\Account\EmailUpdate as EmailUpdateService;
 use App\Services\Logic\Account\OAuthProvider as OAuthProviderService;
 use App\Services\Logic\Account\PasswordReset as PasswordResetService;
@@ -71,6 +73,12 @@ class AccountController extends Controller
 
         $this->view->setVar('oauth_provider', $oauthProvider);
         $this->view->setVar('return_url', $returnUrl);
+
+        if ($oauthProvider['weixin']['enabled'] == 1) {
+            $connectService = new ConnectService();
+            $authorizeUrl = $connectService->getAuthorizeUrl(ConnectModel::PROVIDER_WEIXIN);
+            $this->view->setVar('weixin_authorize_url', $authorizeUrl);
+        }
     }
 
     /**

@@ -10,15 +10,37 @@
     <div class="login-wrap wrap">
         <div class="layui-tabs login-tab">
             <ul class="layui-tabs-header">
-                <li class="layui-this">密码登录</li>
-                <li>验证登录</li>
+                {% if oauth_provider.weixin.enabled == 1 %}
+                    <li class="layui-this">微信登录</li>
+                    <li>账号登录</li>
+                {% else %}
+                    <li class="layui-this">账号登录</li>
+                {% endif %}
             </ul>
             <div class="layui-tabs-body">
-                <div class="layui-tabs-item layui-show">
-                    {{ partial('account/login_by_password') }}
-                </div>
-                <div class="layui-tabs-item">
-                    {{ partial('account/login_by_verify') }}
+                {% if oauth_provider.weixin.enabled == 1 %}
+                    <div class="layui-tabs-item layui-show">
+                        <div class="wechat-login-panel">
+                            <iframe class="qrcode-frame" src="{{ weixin_authorize_url }}" frameborder="0" scrolling="no"></iframe>
+                            <div class="fallback">
+                                <a href="{{ url({'for':'home.oauth.weixin'}) }}">二维码无法显示？点击前往微信登录</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+                <div class="layui-tabs-item{% if oauth_provider.weixin.enabled != 1 %} layui-show{% endif %}">
+                    <div id="pwd-login-panel">
+                        {{ partial('account/login_by_password') }}
+                        <div class="switch-link">
+                            <a id="goto-verify-login" href="javascript:;">验证码登录</a>
+                        </div>
+                    </div>
+                    <div id="verify-login-panel" style="display:none;">
+                        {{ partial('account/login_by_verify') }}
+                        <div class="switch-link">
+                            <a id="goto-pwd-login" href="javascript:;">密码登录</a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -27,17 +49,17 @@
             <span class="separator">·</span>
             <a class="forget-link" href="{{ url({'for':'home.account.forget'}) }}">忘记密码</a>
         </div>
-        <div class="oauth">
-            {% if oauth_provider.qq.enabled == 1 %}
-                <a class="layui-icon layui-icon-login-qq login-qq" href="{{ url({'for':'home.oauth.qq'}) }}"></a>
-            {% endif %}
-            {% if oauth_provider.weixin.enabled == 1 %}
-                <a class="layui-icon layui-icon-login-wechat login-wechat" href="{{ url({'for':'home.oauth.weixin'}) }}"></a>
-            {% endif %}
-            {% if oauth_provider.weibo.enabled == 1 %}
-                <a class="layui-icon layui-icon-login-weibo login-weibo" href="{{ url({'for':'home.oauth.weibo'}) }}"></a>
-            {% endif %}
-        </div>
+        {% if oauth_provider.qq.enabled == 1 or oauth_provider.weibo.enabled == 1 %}
+            <div class="oauth">
+                <span class="oauth-tips">其他登录方式</span>
+                {% if oauth_provider.qq.enabled == 1 %}
+                    <a class="layui-icon layui-icon-login-qq login-qq" href="{{ url({'for':'home.oauth.qq'}) }}"></a>
+                {% endif %}
+                {% if oauth_provider.weibo.enabled == 1 %}
+                    <a class="layui-icon layui-icon-login-weibo login-weibo" href="{{ url({'for':'home.oauth.weibo'}) }}"></a>
+                {% endif %}
+            </div>
+        {% endif %}
     </div>
 
 {% endblock %}
@@ -54,6 +76,17 @@
         if (window !== top) {
             top.location.href = window.location.href;
         }
+        layui.use(['jquery'], function () {
+            var $ = layui.jquery;
+            $('#goto-verify-login').on('click', function () {
+                $('#pwd-login-panel').hide();
+                $('#verify-login-panel').show();
+            });
+            $('#goto-pwd-login').on('click', function () {
+                $('#verify-login-panel').hide();
+                $('#pwd-login-panel').show();
+            });
+        });
     </script>
 
 {% endblock %}
