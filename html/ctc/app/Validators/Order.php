@@ -71,6 +71,13 @@ class Order extends Validator
         return $validator->checkVip($id);
     }
 
+    public function checkIfAllowBuyVip(\App\Models\User $user)
+    {
+        if ($user->vip == 1 && $user->vip_permanent == 1) {
+            throw new BadRequestException('order.permanent_vip');
+        }
+    }
+
     public function checkAmount($amount)
     {
         $value = $this->filter->sanitize($amount, ['trim', 'float']);

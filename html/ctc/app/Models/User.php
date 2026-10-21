@@ -165,6 +165,13 @@ class User extends Model
     public $vip_expiry_time = 0;
 
     /**
+     * 永久会员标识
+     *
+     * @var int
+     */
+    public $vip_permanent = 0;
+
+    /**
      * 锁定期限
      *
      * @var int

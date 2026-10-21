@@ -49,6 +49,7 @@
                         <dd><a href="{{ url({'for':'home.tc.index'}) }}">教学中心</a></dd>
                     {% endif %}
                     <dd><a href="{{ url({'for':'home.uc.index'}) }}">用户中心</a></dd>
+                    <dd><a href="{{ url({'for':'home.vip_redeem.index'}) }}">兑换会员</a></dd>
                     <dd><a href="{{ url({'for':'home.account.logout'}) }}">退出登录</a></dd>
                 </dl>
             </li>

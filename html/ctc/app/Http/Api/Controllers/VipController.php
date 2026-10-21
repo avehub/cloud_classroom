@@ -38,4 +38,16 @@ class VipController extends Controller
         return $this->jsonPaginate($pager);
     }
 
+    /**
+     * @Post("/redeem", name="api.vip.redeem")
+     */
+    public function redeemAction()
+    {
+        $service = new \App\Services\Logic\Vip\CodeRedeem();
+
+        $result = $service->handle();
+
+        return $this->jsonSuccess($result);
+    }
+
 }

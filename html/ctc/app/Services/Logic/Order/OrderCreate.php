@@ -67,6 +67,8 @@ class OrderCreate extends LogicService
 
         } elseif ($post['item_type'] == KgSaleModel::ITEM_VIP) {
 
+            $orderValidator->checkIfAllowBuyVip($user);
+
             $vip = $orderValidator->checkVip($post['item_id']);
 
             $this->amount = $vip->price;

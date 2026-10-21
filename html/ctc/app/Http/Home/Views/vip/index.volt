@@ -13,24 +13,28 @@
         <button class="layui-btn layui-bg-blue">优先服务</button>
     </div>
 
-    <div class="vip-header">开通会员</div>
+    {% if auth_user.vip == 1 and auth_user.vip_permanent == 1 %}
+        <div class="vip-header">您已是永久会员</div>
+    {% else %}
+        <div class="vip-header">开通会员</div>
 
-    <div class="vip-option-list">
-        <div class="layui-row layui-col-space20">
-            {% for option in vip_options %}
-                {% set order_url = url({'for':'home.order.confirm'},{'item_id':option.id,'item_type':3}) %}
-                <div class="layui-col-md3">
-                    <div class="vip-option-card">
-                        <div class="title">{{ option.title }}</div>
-                        <div class="price">￥{{ option.price }}</div>
-                        <div class="order">
-                            <button class="layui-btn layui-btn-sm layui-bg-red btn-order" data-url="{{ order_url }}">立即开通</button>
+        <div class="vip-option-list">
+            <div class="layui-row layui-col-space20">
+                {% for option in vip_options %}
+                    {% set order_url = url({'for':'home.order.confirm'},{'item_id':option.id,'item_type':3}) %}
+                    <div class="layui-col-md3">
+                        <div class="vip-option-card">
+                            <div class="title">{{ option.title }}</div>
+                            <div class="price">￥{{ option.price }}</div>
+                            <div class="order">
+                                <button class="layui-btn layui-btn-sm layui-bg-red btn-order" data-url="{{ order_url }}">立即开通</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            {% endfor %}
+                {% endfor %}
+            </div>
         </div>
-    </div>
+    {% endif %}
 
     {% set free_courses_url = url({'for':'home.vip.courses'},{'type':'free'}) %}
     {% set discount_courses_url = url({'for':'home.vip.courses'},{'type':'discount'}) %}

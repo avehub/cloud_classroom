@@ -33,6 +33,7 @@ class ProfileInfo extends LogicService
             'edu_role' => $user->edu_role,
             'admin_role' => $user->admin_role,
             'vip_expiry_time' => $user->vip_expiry_time,
+            'vip_permanent' => $user->vip_permanent,
             'lock_expiry_time' => $user->lock_expiry_time,
             'create_time' => $user->create_time,
             'update_time' => $user->update_time,

@@ -40,6 +40,7 @@ class RevokeVipTask extends Task
 
         return UserModel::query()
             ->where('vip = 1')
+            ->andWhere('vip_permanent = 0')
             ->andWhere('vip_expiry_time < :time:', ['time' => $time])
             ->limit($limit)
             ->execute();

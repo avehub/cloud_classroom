@@ -200,11 +200,26 @@ class User extends Service
             $data['vip'] = $validator->checkVipStatus($post['vip']);
         }
 
+        if (isset($post['vip_permanent'])) {
+            $data['vip_permanent'] = $validator->checkVipStatus($post['vip_permanent']);
+        }
+
         if (isset($post['locked'])) {
             $data['locked'] = $validator->checkLockStatus($post['locked']);
         }
 
-        if (!empty($post['vip_expiry_time'])) {
+        $vip = $data['vip'] ?? $user->vip;
+        $vipPermanent = $data['vip_permanent'] ?? $user->vip_permanent;
+
+        if ($vip == 0) {
+            $data['vip'] = 0;
+            $data['vip_permanent'] = 0;
+            $data['vip_expiry_time'] = 0;
+        } elseif ($vipPermanent == 1) {
+            $data['vip'] = 1;
+            $data['vip_permanent'] = 1;
+            $data['vip_expiry_time'] = 0;
+        } elseif (!empty($post['vip_expiry_time'])) {
             $data['vip_expiry_time'] = $validator->checkVipExpiryTime($post['vip_expiry_time']);
             if ($data['vip_expiry_time'] < time()) {
                 $data['vip'] = 0;

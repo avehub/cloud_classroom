@@ -100,7 +100,9 @@ class GiftInfo extends LogicService
 
             $balance = $userRepo->findUserBalance($user->id);
 
-            if ($gift->stock > 0 && $balance->point > $gift->point) {
+            $caseVip = !($gift->type == KgSaleModel::ITEM_VIP && $user->vip_permanent == 1);
+
+            if ($caseVip && $gift->stock > 0 && $balance->point > $gift->point) {
                 $me['allow_redeem'] = 1;
             }
         }

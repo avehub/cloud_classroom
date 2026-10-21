@@ -25,7 +25,9 @@
 {%- endmacro %}
 
 {%- macro status_info(user) %}
-    {% if user.vip == 1 %}
+    {% if user.vip == 1 and user.vip_permanent == 1 %}
+        <span class="layui-badge layui-bg-orange" title="永久会员">永久会员</span>
+    {% elseif user.vip == 1 %}
         <span class="layui-badge layui-bg-orange" title="期限：{{ date('Y-m-d H:i:s',user.vip_expiry_time) }}">会员</span>
     {% endif %}
     {% if user.locked == 1 %}

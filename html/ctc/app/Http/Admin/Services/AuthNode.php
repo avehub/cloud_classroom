@@ -628,6 +628,12 @@ class AuthNode extends Service
                             'type' => 'menu',
                             'route' => 'admin.point_gift.list',
                         ],
+                        [
+                            'id' => '2-2-3',
+                            'title' => '会员兑换码',
+                            'type' => 'menu',
+                            'route' => 'admin.vip_redeem.list',
+                        ],
                     ],
                 ],
                 [
@@ -886,6 +892,55 @@ class AuthNode extends Service
                             'title' => '删除套餐',
                             'type' => 'button',
                             'route' => 'admin.vip.delete',
+                        ],
+                    ],
+                ],
+                [
+                    'id' => '2-22',
+                    'title' => '会员兑换码',
+                    'type' => 'button',
+                    'children' => [
+                        [
+                            'id' => '2-22-1',
+                            'title' => '批次列表',
+                            'type' => 'button',
+                            'route' => 'admin.vip_redeem.list',
+                        ],
+                        [
+                            'id' => '2-22-2',
+                            'title' => '生成兑换码',
+                            'type' => 'button',
+                            'route' => 'admin.vip_redeem.add',
+                        ],
+                        [
+                            'id' => '2-22-3',
+                            'title' => '修改批次状态',
+                            'type' => 'button',
+                            'route' => 'admin.vip_redeem.edit',
+                        ],
+                        [
+                            'id' => '2-22-4',
+                            'title' => '兑换码列表',
+                            'type' => 'button',
+                            'route' => 'admin.vip_redeem.codes',
+                        ],
+                        [
+                            'id' => '2-22-5',
+                            'title' => '搜索兑换码',
+                            'type' => 'button',
+                            'route' => 'admin.vip_redeem.search',
+                        ],
+                        [
+                            'id' => '2-22-6',
+                            'title' => '停用兑换码',
+                            'type' => 'button',
+                            'route' => 'admin.vip_redeem.disable',
+                        ],
+                        [
+                            'id' => '2-22-7',
+                            'title' => '导出兑换码',
+                            'type' => 'button',
+                            'route' => 'admin.vip_redeem.export',
                         ],
                     ],
                 ],

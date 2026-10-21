@@ -81,6 +81,10 @@ class PointGiftRedeem extends Validator
 
     protected function checkIfAllowRedeemVip(VipModel $vip, UserModel $user)
     {
+        if ($user->vip_permanent == 1) {
+            throw new BadRequestException('order.permanent_vip');
+        }
+
         if ($vip->published == 0) {
             throw new BadRequestException('point_gift_redeem.vip_not_published');
         }

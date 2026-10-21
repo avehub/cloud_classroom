@@ -226,6 +226,26 @@ $error['package.invalid_price'] = '无效的价格（范围：0.01-10000）';
 $error['package.invalid_expiry'] = '无效的期限（范围：1~60）';
 
 /**
+ * 会员兑换码相关
+ */
+$error['vip_redeem.invalid_code'] = '无效的兑换码';
+$error['vip_redeem.code_used'] = '兑换码已被使用';
+$error['vip_redeem.code_disabled'] = '兑换码已停用';
+$error['vip_redeem.batch_disabled'] = '兑换码所属批次已停用';
+$error['vip_redeem.code_expired'] = '兑换码已过期';
+$error['vip_redeem.already_permanent'] = '您已是永久会员，无需重复兑换';
+$error['vip_redeem.too_many_attempts'] = '尝试次数过多，请稍后再试';
+$error['vip_redeem.invalid_batch_name'] = '批次名称长度应为2-50个字符';
+$error['vip_redeem.invalid_code_count'] = '单次生成数量应为1-1000个';
+$error['vip_redeem.invalid_expire_time'] = '兑换截止时间必须晚于当前时间';
+$error['vip_redeem.invalid_remark'] = '备注不能超过255个字符';
+$error['vip_redeem.invalid_status'] = '无效的兑换批次状态';
+$error['vip_redeem.batch_not_found'] = '兑换批次不存在';
+$error['vip_redeem.code_not_found'] = '兑换码不存在';
+$error['vip_redeem.code_used_not_allowed'] = '已使用的兑换码不允许停用';
+$error['order.permanent_vip'] = '永久会员无需购买限时会员套餐';
+
+/**
  * 课程成员
  */
 $error['course_user.not_found'] = '课程学员关系不存在';

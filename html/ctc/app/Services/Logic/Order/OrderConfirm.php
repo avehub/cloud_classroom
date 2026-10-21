@@ -54,6 +54,8 @@ class OrderConfirm extends LogicService
 
         } elseif ($itemType == KgSaleModel::ITEM_VIP) {
 
+            $validator->checkIfAllowBuyVip($user);
+
             $vip = $validator->checkVip($itemId);
 
             $result['item_info']['vip'] = $this->handleVipInfo($vip);

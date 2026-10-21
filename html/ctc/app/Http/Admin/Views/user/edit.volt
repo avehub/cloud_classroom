@@ -3,7 +3,7 @@
 {% block content %}
 
     {% set lock_expiry_display = user.locked == 1 ? 'display:block': 'display:none' %}
-    {% set vip_expiry_display = user.vip == 1 ? 'display:block': 'display:none' %}
+    {% set vip_expiry_display = user.vip == 1 and user.vip_permanent == 0 ? 'display:block': 'display:none' %}
     {% set update_user_url = url({'for':'admin.user.update','id':user.id}) %}
 
     <fieldset class="layui-elem-field layui-field-title">
@@ -71,6 +71,13 @@
                         <div class="layui-input-block">
                             <input type="radio" name="vip" value="1" title="是" lay-filter="vip" {% if user.vip == 1 %}checked="checked"{% endif %}>
                             <input type="radio" name="vip" value="0" title="否" lay-filter="vip" {% if user.vip == 0 %}checked="checked"{% endif %}>
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">永久会员</label>
+                        <div class="layui-input-block">
+                            <input type="radio" name="vip_permanent" value="1" title="是" lay-filter="vip-permanent" {% if user.vip_permanent == 1 %}checked="checked"{% endif %}>
+                            <input type="radio" name="vip_permanent" value="0" title="否" lay-filter="vip-permanent" {% if user.vip_permanent == 0 %}checked="checked"{% endif %}>
                         </div>
                     </div>
                     <div id="vip-expiry-block" style="{{ vip_expiry_display }}">
@@ -175,14 +182,19 @@
                 type: 'datetime'
             });
 
-            form.on('radio(vip)', function (data) {
+            function renderVipExpiry() {
+                var vip = $('input[name=vip]:checked').val();
+                var permanent = $('input[name=vip_permanent]:checked').val();
                 var block = $('#vip-expiry-block');
-                if (data.value === '1') {
+                if (vip === '1' && permanent === '0') {
                     block.show();
                 } else {
                     block.hide();
                 }
-            });
+            }
+
+            form.on('radio(vip)', renderVipExpiry);
+            form.on('radio(vip-permanent)', renderVipExpiry);
 
             form.on('radio(locked)', function (data) {
                 var block = $('#lock-expiry-block');
