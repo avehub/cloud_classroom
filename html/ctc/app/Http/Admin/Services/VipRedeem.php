@@ -57,6 +57,10 @@ class VipRedeem extends Service
             $batch->create();
 
             if ($batch->id < 1) {
+                $batch->id = (int)$this->db->lastInsertId();
+            }
+
+            if ($batch->id < 1) {
                 throw new \RuntimeException('vip_redeem.create_failed');
             }
 
