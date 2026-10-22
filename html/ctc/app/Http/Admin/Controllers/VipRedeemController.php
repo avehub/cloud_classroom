@@ -67,9 +67,10 @@ class VipRedeemController extends Controller
     {
         $service = new VipRedeemService();
 
-        $pager = $service->getCodes();
+        $result = $service->getCodes();
 
-        $this->view->setVar('pager', $pager);
+        $this->view->setVar('pager', $result['pager']);
+        $this->view->setVar('code_items', new \ArrayIterator($result['items']));
         $this->view->setVar('status_types', $service->getCodeStatusTypes());
         $this->view->setVar('filters', $this->request->getQuery());
     }
@@ -103,7 +104,23 @@ class VipRedeemController extends Controller
     {
         $service = new VipRedeemService();
 
-        $content = $service->exportCodes();
+        try {
+            $content = $service->exportCodes();
+        } catch (\App\Exceptions\BadRequest $e) {
+            $this->flashSession->error($this->getErrorMessage($e->getMessage()));
+
+            $params = $this->request->getPost();
+            unset($params['csrf_token'], $params['code']);
+
+            $location = $this->url->get(['for' => 'admin.vip_redeem.codes']);
+            $query = http_build_query($params);
+
+            if ($query) {
+                $location .= '?' . $query;
+            }
+
+            return $this->response->redirect($location);
+        }
 
         $this->response->setHeader('Content-Type', 'text/csv; charset=utf-8');
         $this->response->setHeader('Content-Disposition', 'attachment; filename="vip-redeem-codes.csv"');

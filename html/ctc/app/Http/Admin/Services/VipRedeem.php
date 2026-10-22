@@ -56,6 +56,10 @@ class VipRedeem extends Service
             $batch->creator_name = $user->name;
             $batch->create();
 
+            if ($batch->id < 1) {
+                throw new \RuntimeException('vip_redeem.create_failed');
+            }
+
             $codeRepo = new VipRedeemCodeRepo();
 
             for ($i = 0; $i < $codeCount; $i++) {
@@ -67,7 +71,7 @@ class VipRedeem extends Service
                 $code = new VipRedeemCodeModel();
 
                 $code->batch_id = $batch->id;
-                $code->code = $this->crypt->encryptBase64($plainCode, null, true);
+                $code->code = \App\Library\Utils\VipRedeemCode::encrypt($plainCode);
                 $code->code_hash = $codeHash;
                 $code->create();
             }
@@ -121,11 +125,17 @@ class VipRedeem extends Service
             $pagerQuery->getLimit()
         );
 
+        $items = [];
+
         if ($pager->total_items > 0) {
-            $pager->items = $this->handleCodes($pager->items);
+            $items = $this->handleCodes($pager->items);
+            $pager->items = $items;
         }
 
-        return $pager;
+        return [
+            'pager' => $pager,
+            'items' => $items,
+        ];
     }
 
     public function disableCode($id)
@@ -162,6 +172,10 @@ class VipRedeem extends Service
 
         $items = $codeRepo->findByWhere($params);
 
+        if ($items->count() == 0) {
+            throw new BadRequestException('vip_redeem.no_export_data');
+        }
+
         $handle = fopen('php://temp', 'r+');
 
         fwrite($handle, "\xEF\xBB\xBF");
@@ -170,7 +184,7 @@ class VipRedeem extends Service
         $statusTypes = VipRedeemCodeModel::statusTypes();
 
         foreach ($items as $item) {
-            $plainCode = $this->crypt->decryptBase64($item->code, null, true);
+            $plainCode = \App\Library\Utils\VipRedeemCode::decrypt($item->code);
 
             fputcsv($handle, [
                 $batch->id,
@@ -216,7 +230,6 @@ class VipRedeem extends Service
 
     protected function handleCodes($items)
     {
-        $result = [];
         $batchIds = [];
 
         foreach ($items as $item) {
@@ -237,14 +250,18 @@ class VipRedeem extends Service
             }
         }
 
-        foreach ($items as $item) {
-            $plainCode = $this->crypt->decryptBase64($item->code, null, true);
+        $items->rewind();
+        $result = [];
 
-            $result[] = [
+        foreach ($items as $item) {
+            $plainCode = \App\Library\Utils\VipRedeemCode::decrypt($item->code);
+
+            $result[] = (object)[
                 'id' => $item->id,
                 'batch_id' => $item->batch_id,
                 'batch_name' => $batches[$item->batch_id] ?? 'N/A',
                 'code' => substr($plainCode, 0, 4) . '************' . substr($plainCode, -4),
+                'plain_code' => implode('-', str_split($plainCode, 5)),
                 'status' => $item->status,
                 'user_id' => $item->user_id,
                 'user_name' => $item->user_name,

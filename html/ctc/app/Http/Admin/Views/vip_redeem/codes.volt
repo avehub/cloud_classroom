@@ -14,6 +14,13 @@
         </div>
     </div>
 
+    {% set export_errors = flashSession.getMessages('error') %}
+    {% if export_errors %}
+        {% for message in export_errors %}
+            <div class="layui-alert" style="margin-bottom:15px;">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
     <form class="layui-form" method="POST" action="{{ url({'for':'admin.vip_redeem.export'}) }}" style="margin-bottom:15px;">
         <input type="hidden" name="csrf_token" value="{{ csrfToken.getToken() }}">
         <input type="hidden" name="status" value="{{ filters.status }}">
@@ -39,12 +46,15 @@
         </tr>
         </thead>
         <tbody>
-        {% for item in pager.items %}
+        {% for item in code_items %}
             {% set disable_url = url({'for':'admin.vip_redeem.disable','id':item.id}) %}
             <tr>
                 <td>{{ item.id }}</td>
                 <td>{{ item.batch_name }}（{{ item.batch_id }}）</td>
-                <td>{{ item.code }}</td>
+                <td>
+                    {{ item.code }}
+                    <button type="button" class="layui-btn layui-btn-xs kg-copy-code" data-clipboard-text="{{ item.plain_code }}">复制</button>
+                </td>
                 <td>{{ status_types[item.status] }}</td>
                 <td>{{ item.user_id > 0 ? item.user_name ~ '（' ~ item.user_id ~ '）' : 'N/A' }}</td>
                 <td>{{ item.redeem_time > 0 ? date('Y-m-d H:i:s',item.redeem_time) : 'N/A' }}</td>
@@ -65,12 +75,28 @@
 
 {% endblock %}
 
+{% block include_js %}
+
+    {{ js_include('lib/clipboard.min.js') }}
+
+{% endblock %}
+
 {% block inline_js %}
 
     <script>
         layui.use(['jquery', 'layer'], function () {
             var $ = layui.jquery;
             var layer = layui.layer;
+
+            var clipboard = new ClipboardJS('.kg-copy-code');
+
+            clipboard.on('success', function () {
+                layer.msg('兑换码已复制', {icon: 1});
+            });
+
+            clipboard.on('error', function () {
+                layer.msg('复制失败，请使用导出功能', {icon: 2});
+            });
 
             $('.kg-disable-code').on('click', function () {
                 var url = $(this).data('url');
