@@ -4,7 +4,6 @@
 namespace App\Library\Utils;
 
 use App\Exceptions\BadRequest as BadRequestException;
-use Phalcon\Di;
 
 class VipRedeemCode
 {
@@ -56,7 +55,8 @@ class VipRedeemCode
 
     protected static function getKey()
     {
-        $config = Di::getDefault()->getShared('config');
+        $diClass = class_exists('Phalcon\\Di\\Di') ? 'Phalcon\\Di\\Di' : 'Phalcon\\Di';
+        $config = $diClass::getDefault()->getShared('config');
 
         return hash('sha256', $config->get('key'), true);
     }
