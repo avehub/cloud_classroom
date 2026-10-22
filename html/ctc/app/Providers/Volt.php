@@ -3,6 +3,7 @@
 
 namespace App\Providers;
 
+use Phalcon\Di\Di;
 use Phalcon\Mvc\View\Engine\Volt as PhVolt;
 
 class Volt extends Provider
@@ -12,7 +13,11 @@ class Volt extends Provider
 
     public function register()
     {
-        $this->di->setShared('volt', function ($view, $di) {
+        $this->di->setShared('volt', function ($view = null, $di = null) {
+
+            $di = $di ?: Di::getDefault();
+
+            $view = $view ?: $di->getShared('view');
 
             $volt = new PhVolt($view, $di);
 
