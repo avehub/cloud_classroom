@@ -1,0 +1,36 @@
+services:
+
+  # PHP 8.2 + Phalcon 5 并行环境：仅跑 php-fpm 供灰度验证
+  # 不启动 cron / websocket，避免定时任务与长连接在新旧环境重复执行
+  php82:
+    build: ./php82
+    image: ctc/php:8.2
+    container_name: ctc-php82
+    expose:
+      - 9000
+    env_file:
+      - .env
+    volumes:
+      - ./html:/var/www/html
+      - ./php82/log:/var/log/php-fpm
+      - ./php/conf.d/my.ini:/usr/local/etc/php/conf.d/my.ini
+      - ./php82/supervisor/conf.d:/etc/supervisor/conf.d
+      - ./php82/supervisor/log:/var/log/supervisor
+    command: ["supervisord", "-n"]
+    networks:
+      - koogua
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+networks:
+  koogua:
+    driver: bridge
