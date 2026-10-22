@@ -43,7 +43,7 @@ class Vip extends Service
 
         $data['expiry'] = $validator->checkExpiry($post['expiry']);
         $data['price'] = $validator->checkPrice($post['price']);
-        $data['title'] = sprintf('%s个月', $data['expiry']);
+        $data['title'] = $data['expiry'] > 0 ? sprintf('%s个月', $data['expiry']) : '永久会员';
 
         $vip = new VipModel();
 
@@ -70,7 +70,7 @@ class Vip extends Service
 
         if (isset($post['expiry'])) {
             $data['expiry'] = $validator->checkExpiry($post['expiry']);
-            $data['title'] = sprintf('%s个月', $data['expiry']);
+            $data['title'] = $data['expiry'] > 0 ? sprintf('%s个月', $data['expiry']) : '永久会员';
         }
 
         if (isset($post['price'])) {

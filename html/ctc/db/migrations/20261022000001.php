@@ -2,32 +2,59 @@
 
 
 use Phinx\Migration\AbstractMigration;
+use Phinx\Db\Adapter\MysqlAdapter;
 
 final class V20261022000001 extends AbstractMigration
 {
 
     public function up()
     {
-        $times = $this->fetchAll(
-            'SELECT DISTINCT create_time FROM kg_vip_redeem_code WHERE batch_id = 0'
-        );
+        $this->updateVipExpiryComment();
+        $this->insertPermanentVipPackage();
+    }
 
-        foreach ($times as $time) {
-            $batches = $this->fetchAll(
-                'SELECT id FROM kg_vip_redeem_batch WHERE create_time = ' . (int)$time['create_time']
-            );
+    public function down()
+    {
+        $this->execute("DELETE FROM kg_vip WHERE expiry = 0");
 
-            if (count($batches) != 1) continue;
+        $this->table('kg_vip')->changeColumn('expiry', 'integer', [
+            'null' => false,
+            'default' => '0',
+            'limit' => MysqlAdapter::INT_REGULAR,
+            'signed' => false,
+            'comment' => '有效期',
+        ])->update();
+    }
 
-            $this->getQueryBuilder()
-                ->update('kg_vip_redeem_code')
-                ->set('batch_id', $batches[0]['id'])
-                ->where([
-                    'batch_id' => 0,
-                    'create_time' => $time['create_time'],
-                ])
-                ->execute();
-        }
+    protected function updateVipExpiryComment()
+    {
+        $this->table('kg_vip')->changeColumn('expiry', 'integer', [
+            'null' => false,
+            'default' => '0',
+            'limit' => MysqlAdapter::INT_REGULAR,
+            'signed' => false,
+            'comment' => '有效期（月），0表示永久',
+        ])->update();
+    }
+
+    protected function insertPermanentVipPackage()
+    {
+        $count = $this->fetchRow("SELECT COUNT(*) AS total FROM kg_vip WHERE expiry = 0");
+
+        if ($count && $count['total'] > 0) return;
+
+        $now = time();
+
+        $this->table('kg_vip')->insert([
+            'title' => '永久会员',
+            'cover' => '',
+            'expiry' => 0,
+            'price' => 999.00,
+            'published' => 1,
+            'deleted' => 0,
+            'create_time' => $now,
+            'update_time' => $now,
+        ])->saveData();
     }
 
 }

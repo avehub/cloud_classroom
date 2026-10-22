@@ -222,6 +222,10 @@ $error['package.invalid_publish_status'] = '无效的发布状态';
 $error['vip.not_found'] = '会员不存在';
 $error['vip.title_too_short'] = '标题太短（少于5个字符）';
 $error['vip.title_too_long'] = '标题太长（多于30个字符）';
+$error['vip.invalid_expiry'] = '无效的期限（范围：0~60个月，0表示永久）';
+$error['vip.invalid_price'] = '无效的价格（范围：1~999999）';
+$error['vip.invalid_cover'] = '无效的封面';
+$error['vip.invalid_publish_status'] = '无效的发布状态';
 $error['package.invalid_price'] = '无效的价格（范围：0.01-10000）';
 $error['package.invalid_expiry'] = '无效的期限（范围：1~60）';
 

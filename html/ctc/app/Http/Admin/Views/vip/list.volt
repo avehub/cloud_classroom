@@ -30,7 +30,7 @@
         <tr>
             <th>编号</th>
             <th>套餐名称</th>
-            <th>套餐期限（月）</th>
+            <th>套餐期限</th>
             <th>套餐价格</th>
             <th>发布</th>
             <th>操作</th>
@@ -45,7 +45,7 @@
             <tr>
                 <td>{{ item.id }}</td>
                 <td><a href="{{ edit_url }}">{{ item.title }}</a></td>
-                <td>{{ item.expiry }}</td>
+                <td>{% if item.expiry == 0 %}永久{% else %}{{ item.expiry }}个月{% endif %}</td>
                 <td>{{ '￥%0.2f'|format(item.price) }}</td>
                 <td><input type="checkbox" name="published" value="1" lay-text="是|否" lay-skin="switch" lay-filter="go" data-url="{{ update_url }}"
                            {% if item.published == 1 %}checked="checked"{% endif %}>

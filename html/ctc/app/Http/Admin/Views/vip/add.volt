@@ -11,6 +11,7 @@
             <div class="layui-input-block">
                 <select name="expiry" lay-verify="required">
                     <option value="">请选择</option>
+                    <option value="0">永久</option>
                     {% for value in 1..60 %}
                         <option value="{{ value }}">{{ value }}个月</option>
                     {% endfor %}

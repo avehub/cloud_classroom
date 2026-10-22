@@ -79,7 +79,7 @@ class GiftInfo extends LogicService
 
         $vip = $this->checkVip($id);
 
-        $gift->name = sprintf('会员服务（%d个月）', $vip->expiry);
+        $gift->name = $vip->expiry > 0 ? sprintf('会员服务（%d个月）', $vip->expiry) : '会员服务（永久）';
         $gift->cover = $vip->cover;
 
         return $gift;

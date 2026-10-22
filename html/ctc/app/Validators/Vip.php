@@ -55,7 +55,7 @@ class Vip extends Validator
     {
         $value = $this->filter->sanitize($expiry, ['trim', 'int']);
 
-        if ($value < 1 || $value > 60) {
+        if ($value < 0 || $value > 60) {
             throw new BadRequestException('vip.invalid_expiry');
         }
 

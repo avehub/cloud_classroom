@@ -143,7 +143,7 @@ class OrderCreate extends LogicService
     protected function createVipOrder(VipModel $vip, UserModel $user)
     {
         $baseTime = $user->vip_expiry_time > time() ? $user->vip_expiry_time : time();
-        $expiryTime = strtotime("+{$vip->expiry} months", $baseTime);
+        $expiryTime = $vip->expiry > 0 ? strtotime("+{$vip->expiry} months", $baseTime) : 0;
 
         $itemInfo = [
             'vip' => [

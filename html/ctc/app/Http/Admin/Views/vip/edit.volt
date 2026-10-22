@@ -11,6 +11,7 @@
             <div class="layui-input-block">
                 <select name="expiry" lay-verify="required">
                     <option value="">请选择</option>
+                    <option value="0" {% if vip.expiry == 0 %}selected="selected"{% endif %}>永久</option>
                     {% for value in 1..60 %}
                         {% set selected = value == vip.expiry ? 'selected="selected"' : '' %}
                         <option value="{{ value }}" {{ selected }}>{{ value }}个月</option>

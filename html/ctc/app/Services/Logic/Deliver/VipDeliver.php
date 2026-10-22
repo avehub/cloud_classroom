@@ -14,6 +14,17 @@ class VipDeliver extends LogicService
     {
         if ($user->vip_permanent == 1) return;
 
+        if ($vip->expiry == 0) {
+
+            $user->vip = 1;
+            $user->vip_permanent = 1;
+            $user->vip_expiry_time = 0;
+
+            $user->update();
+
+            return;
+        }
+
         $baseTime = $user->vip_expiry_time > time() ? $user->vip_expiry_time : time();
 
         $user->vip_expiry_time = strtotime("+{$vip->expiry} months", $baseTime);
