@@ -69,9 +69,11 @@ class UserContact extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_user_contact';
+        parent::initialize();
+
+        $this->setSource('kg_user_contact');
     }
 
     public function beforeSave()

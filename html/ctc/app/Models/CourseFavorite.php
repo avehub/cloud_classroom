@@ -48,9 +48,11 @@ class CourseFavorite extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_course_favorite';
+        parent::initialize();
+
+        $this->setSource('kg_course_favorite');
     }
 
     public function beforeCreate()

@@ -34,9 +34,11 @@ class CoursePackage extends Model
      */
     public $create_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_course_package';
+        parent::initialize();
+
+        $this->setSource('kg_course_package');
     }
 
     public function beforeCreate()

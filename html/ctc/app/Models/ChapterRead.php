@@ -48,9 +48,11 @@ class ChapterRead extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_chapter_read';
+        parent::initialize();
+
+        $this->setSource('kg_chapter_read');
     }
 
     public function beforeCreate()

@@ -73,14 +73,11 @@ class Topic extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_topic';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_topic');
 
         $this->addBehavior(
             new SoftDelete([

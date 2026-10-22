@@ -34,9 +34,11 @@ class TradeStatus extends Model
      */
     public $create_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_trade_status';
+        parent::initialize();
+
+        $this->setSource('kg_trade_status');
     }
 
     public function beforeCreate()

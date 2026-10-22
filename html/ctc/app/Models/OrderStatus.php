@@ -34,9 +34,11 @@ class OrderStatus extends Model
      */
     public $create_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_order_status';
+        parent::initialize();
+
+        $this->setSource('kg_order_status');
     }
 
     public function beforeCreate()

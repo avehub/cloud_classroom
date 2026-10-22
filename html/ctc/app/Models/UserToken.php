@@ -71,14 +71,11 @@ class UserToken extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_user_token';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_user_token');
 
         $this->addBehavior(
             new SoftDelete([

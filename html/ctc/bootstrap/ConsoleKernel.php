@@ -65,7 +65,7 @@ class ConsoleKernel extends Kernel
 
     protected function registerLoaders()
     {
-        $this->loader->registerNamespaces([
+        $this->loader->setNamespaces([
             'App' => app_path(),
             'Bootstrap' => bootstrap_path(),
         ]);

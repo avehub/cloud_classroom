@@ -165,9 +165,11 @@ class Notification extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_notification';
+        parent::initialize();
+
+        $this->setSource('kg_notification');
     }
 
     public function beforeCreate()

@@ -235,14 +235,11 @@ class Question extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_question';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_question');
 
         $this->addBehavior(
             new SoftDelete([

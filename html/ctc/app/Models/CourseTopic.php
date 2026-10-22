@@ -34,9 +34,11 @@ class CourseTopic extends Model
      */
     public $create_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_course_topic';
+        parent::initialize();
+
+        $this->setSource('kg_course_topic');
     }
 
     public function beforeCreate()

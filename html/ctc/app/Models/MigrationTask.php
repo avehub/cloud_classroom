@@ -34,9 +34,11 @@ class MigrationTask extends Model
      */
     public $end_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_migration_task';
+        parent::initialize();
+
+        $this->setSource('kg_migration_task');
     }
 
 }

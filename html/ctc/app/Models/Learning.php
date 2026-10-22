@@ -97,9 +97,11 @@ class Learning extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_learning';
+        parent::initialize();
+
+        $this->setSource('kg_learning');
     }
 
     public function beforeCreate()

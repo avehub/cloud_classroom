@@ -116,14 +116,11 @@ class Category extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_category';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_category');
 
         $this->addBehavior(
             new SoftDelete([

@@ -141,14 +141,11 @@ class Review extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_review';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_review');
 
         $this->addBehavior(
             new SoftDelete([

@@ -186,14 +186,11 @@ class Chapter extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_chapter';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_chapter');
 
         $this->addBehavior(
             new SoftDelete([

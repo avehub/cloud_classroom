@@ -90,14 +90,11 @@ class Upload extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_upload';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_upload');
 
         $this->addBehavior(
             new SoftDelete([

@@ -115,14 +115,11 @@ class Tag extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_tag';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_tag');
 
         $this->addBehavior(
             new SoftDelete([

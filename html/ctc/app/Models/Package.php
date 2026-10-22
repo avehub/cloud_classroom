@@ -87,14 +87,11 @@ class Package extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_package';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_package');
 
         $this->addBehavior(
             new SoftDelete([

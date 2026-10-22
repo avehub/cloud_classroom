@@ -97,9 +97,11 @@ class Report extends Model
      */
     public $update_time;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_report';
+        parent::initialize();
+
+        $this->setSource('kg_report');
     }
 
     public function beforeCreate()

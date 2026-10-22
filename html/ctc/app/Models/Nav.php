@@ -118,14 +118,11 @@ class Nav extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_nav';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_nav');
 
         $this->addBehavior(
             new SoftDelete([

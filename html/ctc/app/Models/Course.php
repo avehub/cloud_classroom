@@ -286,14 +286,11 @@ class Course extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_course';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_course');
 
         $this->addBehavior(
             new SoftDelete([
