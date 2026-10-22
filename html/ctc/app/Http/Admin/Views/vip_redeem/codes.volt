@@ -48,6 +48,7 @@
         <tbody>
         {% for item in code_items %}
             {% set disable_url = url({'for':'admin.vip_redeem.disable','id':item.id}) %}
+            {% set enable_url = url({'for':'admin.vip_redeem.enable','id':item.id}) %}
             <tr>
                 <td>{{ item.id }}</td>
                 <td>{{ item.batch_name }}（{{ item.batch_id }}）</td>
@@ -60,8 +61,10 @@
                 <td>{{ item.redeem_time > 0 ? date('Y-m-d H:i:s',item.redeem_time) : 'N/A' }}</td>
                 <td>{{ item.client_ip ? item.client_ip : 'N/A' }}</td>
                 <td>
-                    {% if item.status != 1 %}
+                    {% if item.status == 0 %}
                         <button class="layui-btn layui-btn-sm kg-disable-code" data-url="{{ disable_url }}">停用</button>
+                    {% elseif item.status == 2 %}
+                        <button class="layui-btn layui-btn-sm kg-enable-code" data-url="{{ enable_url }}">启用</button>
                     {% else %}
                         N/A
                     {% endif %}
@@ -101,6 +104,18 @@
             $('.kg-disable-code').on('click', function () {
                 var url = $(this).data('url');
                 layer.confirm('停用后该兑换码将无法使用，且不影响已完成兑换，确定停用？', function () {
+                    $.post(url, function (res) {
+                        layer.msg(res.msg, {icon: 1});
+                        setTimeout(function () {
+                            window.location.reload();
+                        }, 1000);
+                    });
+                });
+            });
+
+            $('.kg-enable-code').on('click', function () {
+                var url = $(this).data('url');
+                layer.confirm('启用后该兑换码可以再次使用，确定启用？', function () {
                     $.post(url, function (res) {
                         layer.msg(res.msg, {icon: 1});
                         setTimeout(function () {

@@ -162,6 +162,28 @@ class VipRedeem extends Service
         return $code;
     }
 
+    public function enableCode($id)
+    {
+        $codeRepo = new VipRedeemCodeRepo();
+
+        $code = $codeRepo->findById($id);
+
+        if (!$code) {
+            throw new BadRequestException('vip_redeem.code_not_found');
+        }
+
+        if ($code->status == VipRedeemCodeModel::STATUS_USED) {
+            throw new BadRequestException('vip_redeem.code_used_action_not_allowed');
+        }
+
+        if ($code->status == VipRedeemCodeModel::STATUS_DISABLED) {
+            $code->status = VipRedeemCodeModel::STATUS_UNUSED;
+            $code->update();
+        }
+
+        return $code;
+    }
+
     public function exportCodes()
     {
         $params = $this->normalizeCodeFilters($this->request->getPost());

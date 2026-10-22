@@ -98,6 +98,18 @@ class VipRedeemController extends Controller
     }
 
     /**
+     * @Post("/code/{id:[0-9]+}/enable", name="admin.vip_redeem.enable")
+     */
+    public function enableAction($id)
+    {
+        $service = new VipRedeemService();
+
+        $service->enableCode($id);
+
+        return $this->jsonSuccess(['msg' => '启用兑换码成功']);
+    }
+
+    /**
      * @Post("/code/export", name="admin.vip_redeem.export")
      */
     public function exportAction()

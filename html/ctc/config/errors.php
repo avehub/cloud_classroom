@@ -247,6 +247,7 @@ $error['vip_redeem.invalid_status'] = '无效的兑换批次状态';
 $error['vip_redeem.batch_not_found'] = '兑换批次不存在';
 $error['vip_redeem.code_not_found'] = '兑换码不存在';
 $error['vip_redeem.code_used_not_allowed'] = '已使用的兑换码不允许停用';
+$error['vip_redeem.code_used_action_not_allowed'] = '已使用的兑换码不允许操作';
 $error['vip_redeem.no_export_data'] = '该批次没有可导出的兑换码';
 $error['vip_redeem.code_encrypt_failed'] = '兑换码加密失败';
 $error['vip_redeem.code_decrypt_failed'] = '兑换码解密失败，请检查运行环境或重新生成';
