@@ -5,7 +5,7 @@ namespace App\Http\Admin;
 
 use App\Library\Mvc\View as MyView;
 use App\Services\Auth\Admin as AdminAuth;
-use Phalcon\DiInterface;
+use Phalcon\Di\DiInterface;
 use Phalcon\Mvc\ModuleDefinitionInterface;
 
 class Module implements ModuleDefinitionInterface

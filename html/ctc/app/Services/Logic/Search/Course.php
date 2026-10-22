@@ -6,7 +6,7 @@ namespace App\Services\Logic\Search;
 use App\Library\Paginator\Adapter\XunSearch as XunSearchPaginator;
 use App\Library\Paginator\Query as PagerQuery;
 use App\Services\Search\CourseSearcher as CourseSearcherService;
-use Phalcon\Text;
+use App\Library\Text;
 
 class Course extends Handler
 {

@@ -4,7 +4,7 @@
 namespace App\Providers;
 
 use Phalcon\Di\Injectable;
-use Phalcon\DiInterface;
+use Phalcon\Di\DiInterface;
 
 abstract class Provider extends Injectable implements ProviderInterface
 {

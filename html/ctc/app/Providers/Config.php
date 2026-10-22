@@ -3,7 +3,7 @@
 
 namespace App\Providers;
 
-use Phalcon\Config as PhConfig;
+use Phalcon\Config\Config as PhConfig;
 
 class Config extends Provider
 {

@@ -4,7 +4,6 @@
 namespace App\Library;
 
 use Phalcon\Di;
-use Phalcon\Text;
 
 class Captcha
 {

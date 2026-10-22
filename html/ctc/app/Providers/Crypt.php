@@ -3,7 +3,7 @@
 
 namespace App\Providers;
 
-use Phalcon\Config;
+use Phalcon\Config\Config;
 use Phalcon\Crypt as PhCrypt;
 
 class Crypt extends Provider

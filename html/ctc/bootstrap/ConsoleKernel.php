@@ -15,7 +15,7 @@ use App\Providers\Provider as AppProvider;
 use Phalcon\Cli\Console;
 use Phalcon\Di\FactoryDefault\Cli;
 use Phalcon\Loader;
-use Phalcon\Text;
+use App\Library\Text;
 
 class ConsoleKernel extends Kernel
 {

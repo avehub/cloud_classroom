@@ -10,7 +10,7 @@ use App\Repos\Article as ArticleRepo;
 use App\Services\Category as CategoryService;
 use App\Services\Logic\Service as LogicService;
 use App\Validators\ArticleQuery as ArticleQueryValidator;
-use Phalcon\Text;
+use App\Library\Text;
 
 class ArticleList extends LogicService
 {

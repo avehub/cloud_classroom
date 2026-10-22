@@ -4,7 +4,7 @@
 namespace App\Models;
 
 use Phalcon\Mvc\Model\Behavior\SoftDelete;
-use Phalcon\Text;
+use App\Library\Text;
 
 class Vip extends Model
 {

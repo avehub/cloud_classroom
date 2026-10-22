@@ -6,7 +6,7 @@ namespace App\Models;
 use App\Services\Sync\ArticleIndex as ArticleIndexSync;
 use App\Services\Sync\ArticleScore as ArticleScoreSync;
 use Phalcon\Mvc\Model\Behavior\SoftDelete;
-use Phalcon\Text;
+use App\Library\Text;
 
 class Article extends Model
 {

@@ -6,7 +6,7 @@ namespace App\Models;
 use App\Caches\MaxUserId as MaxUserIdCache;
 use App\Caches\User as UserCache;
 use Phalcon\Mvc\Model\Behavior\SoftDelete;
-use Phalcon\Text;
+use App\Library\Text;
 
 class User extends Model
 {

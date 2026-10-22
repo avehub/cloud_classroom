@@ -3,7 +3,7 @@
 
 namespace App\Services;
 
-use Phalcon\Logger\Adapter\File as FileLogger;
+use Phalcon\Logger\Logger as FileLogger;
 use TencentCloud\Common\Credential;
 use TencentCloud\Common\Exception\TencentCloudSDKException;
 use TencentCloud\Common\Profile\ClientProfile;

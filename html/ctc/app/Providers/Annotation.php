@@ -2,9 +2,9 @@
 
 namespace App\Providers;
 
-use Phalcon\Annotations\Adapter\Files as FilesAnnotations;
+use Phalcon\Annotations\Adapter\Stream as FilesAnnotations;
 use Phalcon\Annotations\Adapter\Memory as MemoryAnnotations;
-use Phalcon\Config;
+use Phalcon\Config\Config;
 
 class Annotation extends Provider
 {
@@ -32,7 +32,7 @@ class Annotation extends Provider
                     @mkdir($annotationsDir, 0777, true);
                 }
 
-                if (class_exists('Phalcon\Annotations\Adapter\Files')) {
+                if (class_exists('Phalcon\Annotations\Adapter\Stream')) {
                     $annotations = new FilesAnnotations([
                         'annotationsDir' => $annotationsDir,
                         'lifetime' => $config->path('annotation.lifetime', 86400),

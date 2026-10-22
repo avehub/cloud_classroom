@@ -3,7 +3,7 @@
 
 namespace App\Providers;
 
-use Phalcon\Config;
+use Phalcon\Config\Config;
 use Phalcon\Mvc\Model\MetaData\Memory as MemoryMetaData;
 use Phalcon\Mvc\Model\MetaData\Redis as RedisMetaData;
 

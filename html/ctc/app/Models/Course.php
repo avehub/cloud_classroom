@@ -7,7 +7,7 @@ use App\Caches\MaxCourseId as MaxCourseIdCache;
 use App\Services\Sync\CourseIndex as CourseIndexSync;
 use App\Services\Sync\CourseScore as CourseScoreSync;
 use Phalcon\Mvc\Model\Behavior\SoftDelete;
-use Phalcon\Text;
+use App\Library\Text;
 
 class Course extends Model
 {

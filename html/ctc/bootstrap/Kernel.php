@@ -4,8 +4,8 @@
 namespace Bootstrap;
 
 use Phalcon\Application;
-use Phalcon\Config;
-use Phalcon\Di;
+use Phalcon\Config\Config;
+use Phalcon\Di\Di;
 use Phalcon\Loader;
 
 abstract class Kernel

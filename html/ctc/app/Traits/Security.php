@@ -4,7 +4,7 @@
 namespace App\Traits;
 
 use App\Validators\Security as SecurityValidator;
-use Phalcon\Di;
+use Phalcon\Di\Di;
 use Phalcon\Http\Request;
 
 trait Security

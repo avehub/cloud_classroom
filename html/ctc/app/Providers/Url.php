@@ -3,7 +3,7 @@
 
 namespace App\Providers;
 
-use Phalcon\Config;
+use Phalcon\Config\Config;
 use Phalcon\Mvc\Url as PhUrl;
 
 class Url extends Provider

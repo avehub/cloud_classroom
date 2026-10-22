@@ -3,8 +3,8 @@
 
 namespace App\Library\Paginator;
 
-use Phalcon\Di;
-use Phalcon\Filter;
+use Phalcon\Di\Di;
+use Phalcon\Filter\Filter;
 use Phalcon\Http\Request;
 
 class Query

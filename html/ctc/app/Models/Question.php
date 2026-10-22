@@ -6,7 +6,7 @@ namespace App\Models;
 use App\Services\Sync\QuestionIndex as QuestionIndexSync;
 use App\Services\Sync\QuestionScore as QuestionScoreSync;
 use Phalcon\Mvc\Model\Behavior\SoftDelete;
-use Phalcon\Text;
+use App\Library\Text;
 
 class Question extends Model
 {

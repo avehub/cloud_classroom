@@ -5,9 +5,9 @@ namespace App\Services;
 
 use App\Traits\Auth as AuthTrait;
 use App\Traits\Service as ServiceTrait;
-use Phalcon\Mvc\User\Component;
+use Phalcon\Di\Injectable;
 
-class Service extends Component
+class Service extends Injectable
 {
     use AuthTrait;
     use ServiceTrait;

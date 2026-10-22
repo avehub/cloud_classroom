@@ -7,7 +7,7 @@ use App\Exceptions\BadRequest as BadRequestException;
 use App\Library\Validators\Common as CommonValidator;
 use App\Models\Nav as NavModel;
 use App\Repos\Nav as NavRepo;
-use Phalcon\Text;
+use App\Library\Text;
 
 class Nav extends Validator
 {

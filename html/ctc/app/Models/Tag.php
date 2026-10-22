@@ -5,7 +5,7 @@ namespace App\Models;
 
 use App\Caches\MaxTagId as MaxTagIdCache;
 use Phalcon\Mvc\Model\Behavior\SoftDelete;
-use Phalcon\Text;
+use App\Library\Text;
 
 class Tag extends Model
 {

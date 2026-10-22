@@ -5,7 +5,7 @@ namespace App\Models;
 
 use App\Caches\MaxPackageId as MaxPackageIdCache;
 use Phalcon\Mvc\Model\Behavior\SoftDelete;
-use Phalcon\Text;
+use App\Library\Text;
 
 class Package extends Model
 {

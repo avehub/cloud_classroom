@@ -3,7 +3,7 @@
 
 namespace App\Services;
 
-use Phalcon\Logger\Adapter\File as FileLogger;
+use Phalcon\Logger\Logger as FileLogger;
 use Phalcon\Mailer\Manager as MailerManager;
 
 abstract class Mailer extends Service

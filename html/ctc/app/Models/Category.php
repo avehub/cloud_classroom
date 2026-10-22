@@ -5,7 +5,7 @@ namespace App\Models;
 
 use App\Caches\MaxCategoryId as MaxCategoryIdCache;
 use Phalcon\Mvc\Model\Behavior\SoftDelete;
-use Phalcon\Text;
+use App\Library\Text;
 
 class Category extends Model
 {

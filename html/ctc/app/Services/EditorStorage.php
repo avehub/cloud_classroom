@@ -6,7 +6,7 @@ namespace App\Services;
 use App\Library\Utils\FileInfo;
 use App\Models\Upload as UploadModel;
 use App\Repos\Upload as UploadRepo;
-use Phalcon\Text;
+use App\Library\Text;
 
 class EditorStorage extends Storage
 {

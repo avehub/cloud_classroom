@@ -4,7 +4,7 @@
 namespace App\Builders;
 
 use App\Repos\Article as ArticleRepo;
-use Phalcon\Text;
+use App\Library\Text;
 
 class ArticleFavoriteList extends Builder
 {

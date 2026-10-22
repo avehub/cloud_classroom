@@ -5,7 +5,7 @@ namespace App\Providers;
 
 use App\Library\Cache\Backend\Redis as RedisBackend;
 use Phalcon\Cache\Frontend\Igbinary as IgbinaryFrontend;
-use Phalcon\Config;
+use Phalcon\Config\Config;
 
 class Cache extends Provider
 {

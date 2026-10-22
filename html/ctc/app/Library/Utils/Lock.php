@@ -4,8 +4,8 @@
 namespace App\Library\Utils;
 
 use App\Library\Cache\Backend\Redis as RedisCache;
-use Phalcon\Di;
-use Phalcon\Text;
+use Phalcon\Di\Di;
+use App\Library\Text;
 
 class Lock
 {

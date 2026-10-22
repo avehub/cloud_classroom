@@ -10,7 +10,7 @@ use App\Repos\Question as QuestionRepo;
 use App\Services\Category as CategoryService;
 use App\Services\Logic\Service as LogicService;
 use App\Validators\QuestionQuery as QuestionQueryValidator;
-use Phalcon\Text;
+use App\Library\Text;
 
 class QuestionList extends LogicService
 {
