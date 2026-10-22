@@ -3,7 +3,7 @@
 
 namespace App\Providers;
 
-use Phalcon\Escaper as PhEscaper;
+use Phalcon\Html\Escaper as PhEscaper;
 
 class Escaper extends Provider
 {

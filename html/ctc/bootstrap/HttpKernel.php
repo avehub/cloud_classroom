@@ -22,8 +22,8 @@ use App\Providers\Session as SessionProvider;
 use App\Providers\Url as UrlProvider;
 use App\Providers\View as ViewProvider;
 use App\Providers\Volt as VoltProvider;
+use Phalcon\Autoload\Loader;
 use Phalcon\Di\FactoryDefault;
-use Phalcon\Loader;
 use Phalcon\Mvc\Application;
 
 class HttpKernel extends Kernel
@@ -46,7 +46,10 @@ class HttpKernel extends Kernel
     public function handle()
     {
         $this->app->setDI($this->di);
-        $this->app->handle()->send();
+
+        $uri = $_GET['_url'] ?? $_SERVER['REQUEST_URI'];
+
+        $this->app->handle($uri)->send();
     }
 
     protected function registerLoaders()
@@ -56,7 +59,7 @@ class HttpKernel extends Kernel
             'Bootstrap' => bootstrap_path(),
         ]);
 
-        $this->loader->registerFiles([
+        $this->loader->setFiles([
             vendor_path('autoload.php'),
             app_path('Library/Helper.php'),
         ]);

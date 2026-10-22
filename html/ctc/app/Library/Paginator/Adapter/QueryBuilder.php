@@ -4,8 +4,9 @@
 namespace App\Library\Paginator\Adapter;
 
 use App\Library\Paginator\Query as PaginatorQuery;
+use App\Library\Paginator\Repository;
 use Phalcon\Paginator\Adapter\QueryBuilder as PhQueryBuilder;
-use stdClass;
+use Phalcon\Paginator\RepositoryInterface;
 
 class QueryBuilder extends PhQueryBuilder
 {
@@ -14,19 +15,28 @@ class QueryBuilder extends PhQueryBuilder
 
     protected $params = [];
 
-    public function paginate(): stdClass
+    public function paginate(): RepositoryInterface
     {
-        $pager = parent::paginate();
+        $repository = parent::paginate();
 
         $query = new PaginatorQuery();
 
         $this->baseUrl = $query->getBaseUrl();
         $this->params = $query->getParams();
 
-        $pager->first = $this->buildPageUrl($pager->first);
-        $pager->previous = $this->buildPageUrl($pager->previous);
-        $pager->next = $this->buildPageUrl($pager->next);
-        $pager->last = $this->buildPageUrl($pager->last);
+        $pager = new Repository();
+
+        $pager->setProperties([
+            'items' => $repository->items,
+            'total_items' => $repository->total_items,
+            'total_pages' => $repository->last,
+            'current' => $repository->current,
+            'limit' => $repository->limit,
+            'first' => $this->buildPageUrl($repository->first),
+            'previous' => $this->buildPageUrl($repository->previous),
+            'next' => $this->buildPageUrl($repository->next),
+            'last' => $this->buildPageUrl($repository->last),
+        ]);
 
         return $pager;
     }

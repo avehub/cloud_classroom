@@ -21,7 +21,7 @@ $config['timezone'] = getenv('APP_TIMEZONE') ?: 'Asia/Shanghai';
 /**
  * 日志级别
  */
-$config['log']['level'] = Phalcon\Logger::INFO;
+$config['log']['level'] = Phalcon\Logger\Enum::INFO;
 
 /**
  * 日志链路

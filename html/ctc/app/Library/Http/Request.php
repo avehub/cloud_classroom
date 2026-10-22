@@ -55,7 +55,7 @@ class Request extends \Phalcon\Http\Request
         return $data;
     }
 
-    public function getClientAddress($trustForwardedHeader = true)
+    public function getClientAddress($trustForwardedHeader = true): string
     {
         $address = $_SERVER['REMOTE_ADDR'] ?: '0.0.0.0';
 

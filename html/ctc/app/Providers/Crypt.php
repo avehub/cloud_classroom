@@ -4,7 +4,7 @@
 namespace App\Providers;
 
 use Phalcon\Config\Config;
-use Phalcon\Crypt as PhCrypt;
+use Phalcon\Encryption\Crypt as PhCrypt;
 
 class Crypt extends Provider
 {
@@ -20,7 +20,7 @@ class Crypt extends Provider
 
         $this->di->setShared($this->serviceName, function () use ($config) {
 
-            $crypt = new PhCrypt();
+            $crypt = new PhCrypt('aes-256-cfb');
 
             $crypt->setKey($config->get('key'));
 

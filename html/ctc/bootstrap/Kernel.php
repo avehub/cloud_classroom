@@ -3,10 +3,11 @@
 
 namespace Bootstrap;
 
-use Phalcon\Application;
+use Phalcon\Autoload\Loader;
+use Phalcon\Cli\Console;
 use Phalcon\Config\Config;
 use Phalcon\Di\Di;
-use Phalcon\Loader;
+use Phalcon\Mvc\Application;
 
 abstract class Kernel
 {
@@ -17,7 +18,7 @@ abstract class Kernel
     protected $di;
 
     /**
-     * @var Application
+     * @var Application|Console
      */
     protected $app;
 

@@ -3,7 +3,7 @@
 
 namespace App\Library;
 
-use Phalcon\Di;
+use Phalcon\Di\Di;
 
 class Captcha
 {

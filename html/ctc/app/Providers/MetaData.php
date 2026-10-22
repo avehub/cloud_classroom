@@ -3,9 +3,11 @@
 
 namespace App\Providers;
 
+use Phalcon\Cache\AdapterFactory as CacheAdapterFactory;
 use Phalcon\Config\Config;
 use Phalcon\Mvc\Model\MetaData\Memory as MemoryMetaData;
 use Phalcon\Mvc\Model\MetaData\Redis as RedisMetaData;
+use Phalcon\Storage\SerializerFactory;
 
 class MetaData extends Provider
 {
@@ -29,14 +31,16 @@ class MetaData extends Provider
 
                 $statsKey = '_METADATA_';
 
-                $metaData = new RedisMetaData([
+                $adapterFactory = new CacheAdapterFactory(new SerializerFactory());
+
+                $metaData = new RedisMetaData($adapterFactory, [
                     'host' => $config->path('redis.host'),
                     'port' => $config->path('redis.port'),
                     'auth' => $config->path('redis.auth'),
                     'index' => $config->path('redis.index'),
                     'lifetime' => $config->path('metadata.lifetime'),
                     'prefix' => $statsKey . ':',
-                    'statsKey' => $statsKey,
+                    'defaultSerializer' => 'Igbinary',
                 ]);
             }
 

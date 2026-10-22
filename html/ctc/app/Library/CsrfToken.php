@@ -4,8 +4,8 @@
 namespace App\Library;
 
 use Phalcon\Config\Config;
-use Phalcon\Crypt;
 use Phalcon\Di\Di;
+use Phalcon\Encryption\Crypt;
 use App\Library\Text;
 
 class CsrfToken

@@ -4,8 +4,8 @@
 namespace App\Services;
 
 use GuzzleHttp\Client as HttpClient;
-use Phalcon\Crypt;
-use Phalcon\Di;
+use Phalcon\Di\Di;
+use Phalcon\Encryption\Crypt;
 
 abstract class OAuth extends Service
 {
