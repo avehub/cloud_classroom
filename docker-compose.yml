@@ -38,8 +38,8 @@ services:
       start_period: 10s
 
   php:
-    build: ./php
-    image: ctc/php:latest
+    build: ./php82
+    image: ctc/php:8.2
     container_name: ctc-php
     ports:
       - "8282:8282"
@@ -52,6 +52,7 @@ services:
       - ./php/log:/var/log/php-fpm
       - ./php/conf.d/my.ini:/usr/local/etc/php/conf.d/my.ini
       - ./php/fpm/zz-ctc.conf:/usr/local/etc/php-fpm.d/zz-ctc.conf:ro
+      - ./php/cron.d/course:/etc/cron.d/course:ro
       - ./php/supervisor/conf.d:/etc/supervisor/conf.d
       - ./php/supervisor/log:/var/log/supervisor
     command: ["supervisord", "-n"]
