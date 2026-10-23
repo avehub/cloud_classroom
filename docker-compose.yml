@@ -51,6 +51,7 @@ services:
       - ./html:/var/www/html
       - ./php/log:/var/log/php-fpm
       - ./php/conf.d/my.ini:/usr/local/etc/php/conf.d/my.ini
+      - ./php/conf.d/zz-prod.ini:/usr/local/etc/php/conf.d/zz-prod.ini:ro
       - ./php/fpm/zz-ctc.conf:/usr/local/etc/php-fpm.d/zz-ctc.conf:ro
       - ./php/cron.d/course:/etc/cron.d/course:ro
       - ./php/supervisor/conf.d:/etc/supervisor/conf.d
