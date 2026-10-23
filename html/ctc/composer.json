@@ -26,12 +26,13 @@
   "require-dev": {
     "phalcon/ide-stubs": "^5.0"
   },
-  "repositories": {
-    "packagist": {
+  "repositories": [
+    {
+      "name": "packagist",
       "type": "composer",
-      "url": "https://mirrors.aliyun.com/composer"
+      "url": "https://mirrors.cloud.tencent.com/composer"
     }
-  },
+  ],
   "config": {
     "allow-plugins": {
       "easywechat-composer/easywechat-composer": true
