@@ -48,3 +48,8 @@
 /html/ctc/public/sitemap.xml
 /html/ctc/public/h5
 /html/ctc/storage/cache/purifier
+
+# local backups and gray logs
+/backups/
+/php82/log/
+/php82/supervisor/log/
