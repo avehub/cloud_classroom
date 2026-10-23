@@ -222,6 +222,10 @@ $error['package.invalid_publish_status'] = '无效的发布状态';
 $error['vip.not_found'] = '会员不存在';
 $error['vip.title_too_short'] = '标题太短（少于5个字符）';
 $error['vip.title_too_long'] = '标题太长（多于30个字符）';
+$error['vip.invalid_expiry'] = '无效的期限（范围：0~60个月，0表示永久）';
+$error['vip.invalid_price'] = '无效的价格（范围：1~999999）';
+$error['vip.invalid_cover'] = '无效的封面';
+$error['vip.invalid_publish_status'] = '无效的发布状态';
 $error['package.invalid_price'] = '无效的价格（范围：0.01-10000）';
 $error['package.invalid_expiry'] = '无效的期限（范围：1~60）';
 
@@ -243,6 +247,10 @@ $error['vip_redeem.invalid_status'] = '无效的兑换批次状态';
 $error['vip_redeem.batch_not_found'] = '兑换批次不存在';
 $error['vip_redeem.code_not_found'] = '兑换码不存在';
 $error['vip_redeem.code_used_not_allowed'] = '已使用的兑换码不允许停用';
+$error['vip_redeem.code_used_action_not_allowed'] = '已使用的兑换码不允许操作';
+$error['vip_redeem.no_export_data'] = '该批次没有可导出的兑换码';
+$error['vip_redeem.code_encrypt_failed'] = '兑换码加密失败';
+$error['vip_redeem.code_decrypt_failed'] = '兑换码解密失败，请检查运行环境或重新生成';
 $error['order.permanent_vip'] = '永久会员无需购买限时会员套餐';
 
 /**

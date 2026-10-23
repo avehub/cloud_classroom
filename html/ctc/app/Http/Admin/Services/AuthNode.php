@@ -942,6 +942,12 @@ class AuthNode extends Service
                             'type' => 'button',
                             'route' => 'admin.vip_redeem.export',
                         ],
+                        [
+                            'id' => '2-22-8',
+                            'title' => '启用兑换码',
+                            'type' => 'button',
+                            'route' => 'admin.vip_redeem.enable',
+                        ],
                     ],
                 ],
             ],

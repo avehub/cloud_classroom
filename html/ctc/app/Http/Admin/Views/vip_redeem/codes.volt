@@ -14,6 +14,13 @@
         </div>
     </div>
 
+    {% set export_errors = flashSession.getMessages('error') %}
+    {% if export_errors %}
+        {% for message in export_errors %}
+            <div class="layui-alert" style="margin-bottom:15px;">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
     <form class="layui-form" method="POST" action="{{ url({'for':'admin.vip_redeem.export'}) }}" style="margin-bottom:15px;">
         <input type="hidden" name="csrf_token" value="{{ csrfToken.getToken() }}">
         <input type="hidden" name="status" value="{{ filters.status }}">
@@ -39,19 +46,25 @@
         </tr>
         </thead>
         <tbody>
-        {% for item in pager.items %}
+        {% for item in code_items %}
             {% set disable_url = url({'for':'admin.vip_redeem.disable','id':item.id}) %}
+            {% set enable_url = url({'for':'admin.vip_redeem.enable','id':item.id}) %}
             <tr>
                 <td>{{ item.id }}</td>
                 <td>{{ item.batch_name }}（{{ item.batch_id }}）</td>
-                <td>{{ item.code }}</td>
+                <td>
+                    {{ item.code }}
+                    <button type="button" class="layui-btn layui-btn-xs kg-copy-code" data-clipboard-text="{{ item.plain_code }}">复制</button>
+                </td>
                 <td>{{ status_types[item.status] }}</td>
                 <td>{{ item.user_id > 0 ? item.user_name ~ '（' ~ item.user_id ~ '）' : 'N/A' }}</td>
                 <td>{{ item.redeem_time > 0 ? date('Y-m-d H:i:s',item.redeem_time) : 'N/A' }}</td>
                 <td>{{ item.client_ip ? item.client_ip : 'N/A' }}</td>
                 <td>
-                    {% if item.status != 1 %}
+                    {% if item.status == 0 %}
                         <button class="layui-btn layui-btn-sm kg-disable-code" data-url="{{ disable_url }}">停用</button>
+                    {% elseif item.status == 2 %}
+                        <button class="layui-btn layui-btn-sm kg-enable-code" data-url="{{ enable_url }}">启用</button>
                     {% else %}
                         N/A
                     {% endif %}
@@ -65,6 +78,12 @@
 
 {% endblock %}
 
+{% block include_js %}
+
+    {{ js_include('lib/clipboard.min.js') }}
+
+{% endblock %}
+
 {% block inline_js %}
 
     <script>
@@ -72,9 +91,31 @@
             var $ = layui.jquery;
             var layer = layui.layer;
 
+            var clipboard = new ClipboardJS('.kg-copy-code');
+
+            clipboard.on('success', function () {
+                layer.msg('兑换码已复制', {icon: 1});
+            });
+
+            clipboard.on('error', function () {
+                layer.msg('复制失败，请使用导出功能', {icon: 2});
+            });
+
             $('.kg-disable-code').on('click', function () {
                 var url = $(this).data('url');
                 layer.confirm('停用后该兑换码将无法使用，且不影响已完成兑换，确定停用？', function () {
+                    $.post(url, function (res) {
+                        layer.msg(res.msg, {icon: 1});
+                        setTimeout(function () {
+                            window.location.reload();
+                        }, 1000);
+                    });
+                });
+            });
+
+            $('.kg-enable-code').on('click', function () {
+                var url = $(this).data('url');
+                layer.confirm('启用后该兑换码可以再次使用，确定启用？', function () {
                     $.post(url, function (res) {
                         layer.msg(res.msg, {icon: 1});
                         setTimeout(function () {

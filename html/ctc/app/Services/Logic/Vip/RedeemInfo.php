@@ -19,7 +19,7 @@ class RedeemInfo extends LogicService
         $redeems = [];
 
         foreach ($items as $item) {
-            $code = $this->crypt->decryptBase64($item->code, null, true);
+            $code = \App\Library\Utils\VipRedeemCode::decrypt($item->code);
 
             $redeems[] = [
                 'code' => substr($code, 0, 4) . '************' . substr($code, -4),
