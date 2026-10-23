@@ -31,7 +31,7 @@ services:
         max-file: "3"
     healthcheck:
       # 探测 /health 而非首页：首页请求会把 http://localhost 前缀写进 Redis 缓存，污染前台图片地址
-      test: ["CMD-SHELL", "curl -fsS http://localhost/health || exit 1"]
+      test: ["CMD-SHELL", "curl -kfsS --resolve k.gaodekuai.cn:443:127.0.0.1 https://k.gaodekuai.cn/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -51,6 +51,7 @@ services:
       - ./html:/var/www/html
       - ./php/log:/var/log/php-fpm
       - ./php/conf.d/my.ini:/usr/local/etc/php/conf.d/my.ini
+      - ./php/fpm/zz-ctc.conf:/usr/local/etc/php-fpm.d/zz-ctc.conf:ro
       - ./php/supervisor/conf.d:/etc/supervisor/conf.d
       - ./php/supervisor/log:/var/log/supervisor
     command: ["supervisord", "-n"]
