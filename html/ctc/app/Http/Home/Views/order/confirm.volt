@@ -56,7 +56,7 @@
                 </p>
                 <p>
                     <span class="key">期限</span>
-                    <span class="expiry">{{ vip.expiry }} 个月</span>
+                    <span class="expiry">{% if vip.expiry == 0 %}永久{% else %}{{ vip.expiry }} 个月{% endif %}</span>
                 </p>
             </div>
         </div>

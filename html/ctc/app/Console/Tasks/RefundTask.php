@@ -204,9 +204,22 @@ class RefundTask extends Task
 
         $user = $userRepo->findById($order->owner_id);
 
-        if ($user->vip_permanent == 1) return;
-
         $itemInfo = $order->item_info;
+
+        if ($itemInfo['vip']['expiry'] == 0) {
+
+            if ($user->vip_permanent == 1) {
+                $user->vip = 0;
+                $user->vip_permanent = 0;
+                $user->vip_expiry_time = 0;
+
+                $user->update();
+            }
+
+            return;
+        }
+
+        if ($user->vip_permanent == 1) return;
 
         $diffTime = "-{$itemInfo['vip']['expiry']} months";
         $baseTime = $itemInfo['vip']['expiry_time'];

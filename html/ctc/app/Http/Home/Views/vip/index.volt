@@ -23,7 +23,10 @@
                 {% for option in vip_options %}
                     {% set order_url = url({'for':'home.order.confirm'},{'item_id':option.id,'item_type':3}) %}
                     <div class="layui-col-md3">
-                        <div class="vip-option-card">
+                        <div class="vip-option-card{% if option.expiry == 0 %} permanent{% endif %}">
+                            {% if option.expiry == 0 %}
+                                <span class="badge">永久</span>
+                            {% endif %}
                             <div class="title">{{ option.title }}</div>
                             <div class="price">￥{{ option.price }}</div>
                             <div class="order">

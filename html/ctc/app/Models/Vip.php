@@ -31,7 +31,7 @@ class Vip extends Model
     public $cover = '';
 
     /**
-     * 期限（月）
+     * 期限（月），0表示永久
      *
      * @var int
      */

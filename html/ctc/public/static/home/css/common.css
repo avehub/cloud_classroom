@@ -1572,6 +1572,22 @@
     color: red;
 }
 
+.vip-option-card.permanent {
+    position: relative;
+    border: 1px solid #ff5722;
+}
+
+.vip-option-card.permanent .badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    padding: 2px 8px;
+    font-size: 12px;
+    color: #fff;
+    background-color: #ff5722;
+    border-radius: 0 2px 0 2px;
+}
+
 .cart-item-card {
     display: flex;
     padding-bottom: 10px;
