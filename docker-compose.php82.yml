@@ -19,6 +19,7 @@ services:
       - ../class-php82/html:/var/www/html
       - ./php82/log:/var/log/php-fpm
       - ./php/conf.d/my.ini:/usr/local/etc/php/conf.d/my.ini
+      - ./php/fpm/zz-ctc.conf:/usr/local/etc/php-fpm.d/zz-ctc.conf:ro
       - ./php82/supervisor/log:/var/log/supervisor
       - ../class-php82/php82/supervisor/conf.d:/etc/supervisor/conf.d
     command: ["supervisord", "-n"]
