@@ -38,8 +38,8 @@ services:
       start_period: 10s
 
   php:
-    build: ./php82
-    image: ctc/php:8.2
+    # 生产只拉取预构建镜像；可通过 PHP_IMAGE 固定版本 tag
+    image: ${PHP_IMAGE:-ctc/php:8.2}
     container_name: ctc-php
     ports:
       - "8282:8282"
