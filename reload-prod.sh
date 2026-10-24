@@ -5,7 +5,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${SCRIPT_DIR}"
 
 echo "==> 1. 拉取最新代码..."
-git pull --ff-only
+if [ "${SKIP_GIT_PULL:-0}" = "1" ]; then
+  echo "[INFO] SKIP_GIT_PULL=1，跳过 git pull（仅本地验证）"
+else
+  git pull --ff-only
+fi
 
 echo "==> 2. 构建 PHP 8.2.35 镜像..."
 # Dockerfile 已切到 php:8.2-fpm-bookworm + Phalcon 5
