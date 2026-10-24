@@ -16,6 +16,9 @@ services:
     networks:
       - koogua
     restart: always
+    depends_on:
+      php:
+        condition: service_started
     deploy:
       resources:
         limits:
