@@ -114,7 +114,7 @@ fi
 # ------------------------------------------------------------------------------
 echo "[INFO] 4. 正在归档配置..."
 CONFIG_FILES=()
-for path in .env docker-compose.yml docker-compose.php82.yml nginx/conf.d php/conf.d php/supervisor/conf.d redis/redis.conf; do
+for path in .env docker-compose.yml nginx/conf.d php/conf.d php/supervisor/conf.d redis/redis.conf; do
     [ -e "${SCRIPT_DIR}/${path}" ] && CONFIG_FILES+=("${path}")
 done
 
