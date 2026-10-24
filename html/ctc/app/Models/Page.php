@@ -78,14 +78,11 @@ class Page extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_page';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_page');
 
         $this->addBehavior(
             new SoftDelete([

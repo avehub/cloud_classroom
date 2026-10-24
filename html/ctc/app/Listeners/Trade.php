@@ -8,7 +8,7 @@ use App\Models\Task as TaskModel;
 use App\Models\Trade as TradeModel;
 use App\Repos\Order as OrderRepo;
 use Phalcon\Events\Event as PhEvent;
-use Phalcon\Logger\Adapter\File as FileLogger;
+use Phalcon\Logger\Logger as FileLogger;
 
 class Trade extends Listener
 {

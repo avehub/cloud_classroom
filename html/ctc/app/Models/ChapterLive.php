@@ -76,9 +76,11 @@ class ChapterLive extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_chapter_live';
+        parent::initialize();
+
+        $this->setSource('kg_chapter_live');
     }
 
     public function beforeCreate()

@@ -29,9 +29,11 @@ class VipRedeemBatch extends Model
 
     public $update_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_vip_redeem_batch';
+        parent::initialize();
+
+        $this->setSource('kg_vip_redeem_batch');
     }
 
     public function beforeCreate()

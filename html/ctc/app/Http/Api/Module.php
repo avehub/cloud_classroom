@@ -4,7 +4,7 @@
 namespace App\Http\Api;
 
 use App\Services\Auth\Api as ApiAuth;
-use Phalcon\DiInterface;
+use Phalcon\Di\DiInterface;
 use Phalcon\Mvc\ModuleDefinitionInterface;
 use Phalcon\Mvc\View;
 

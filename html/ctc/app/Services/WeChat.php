@@ -4,7 +4,7 @@
 namespace App\Services;
 
 use EasyWeChat\Factory;
-use Phalcon\Logger\Adapter\File as FileLogger;
+use Phalcon\Logger\Logger as FileLogger;
 
 class WeChat extends Service
 {

@@ -48,9 +48,11 @@ class ArticleLike extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_article_like';
+        parent::initialize();
+
+        $this->setSource('kg_article_like');
     }
 
     public function beforeCreate()

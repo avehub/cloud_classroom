@@ -4,7 +4,7 @@
 namespace App\Models;
 
 use Phalcon\Mvc\Model\Behavior\SoftDelete;
-use Phalcon\Text;
+use App\Library\Text;
 
 class PointGift extends Model
 {
@@ -140,14 +140,11 @@ class PointGift extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_point_gift';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_point_gift');
 
         $this->addBehavior(
             new SoftDelete([

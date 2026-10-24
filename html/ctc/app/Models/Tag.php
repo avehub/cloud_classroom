@@ -5,7 +5,7 @@ namespace App\Models;
 
 use App\Caches\MaxTagId as MaxTagIdCache;
 use Phalcon\Mvc\Model\Behavior\SoftDelete;
-use Phalcon\Text;
+use App\Library\Text;
 
 class Tag extends Model
 {
@@ -115,14 +115,11 @@ class Tag extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_tag';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_tag');
 
         $this->addBehavior(
             new SoftDelete([

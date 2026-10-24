@@ -3,17 +3,17 @@
 
 namespace App\Library;
 
-use Phalcon\Config;
-use Phalcon\Di;
-use Phalcon\Logger as PhLogger;
-use Phalcon\Logger\Adapter\File as FileLogger;
+use Phalcon\Config\Config;
+use Phalcon\Di\Di;
+use Phalcon\Logger\Adapter\Stream as StreamLogger;
+use Phalcon\Logger\Logger as PhalconLogger;
 
 class Logger
 {
 
     /**
      * @param string $channel
-     * @return FileLogger
+     * @return PhalconLogger
      */
     public function getInstance($channel = 'common')
     {
@@ -26,9 +26,11 @@ class Logger
 
         $path = log_path($filename);
 
-        $level = $config->get('env') != ENV_DEV ? $config->path('log.level') : PhLogger::DEBUG;
+        $level = $config->get('env') != ENV_DEV ? $config->path('log.level') : PhalconLogger::DEBUG;
 
-        $logger = new FileLogger($path);
+        $logger = new PhalconLogger($channel, [
+            $channel => new StreamLogger($path),
+        ]);
 
         $logger->setLogLevel($level);
 

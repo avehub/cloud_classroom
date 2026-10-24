@@ -4,7 +4,7 @@
 namespace App\Providers;
 
 use App\Listeners\Db as DbListener;
-use Phalcon\Config as Config;
+use Phalcon\Config\Config as Config;
 use Phalcon\Db\Adapter\Pdo\Mysql as MySqlAdapter;
 use Phalcon\Events\Manager as EventsManager;
 

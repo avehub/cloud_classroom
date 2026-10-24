@@ -5,7 +5,7 @@ namespace App\Models;
 
 use App\Caches\MaxTopicId as MaxTopicIdCache;
 use Phalcon\Mvc\Model\Behavior\SoftDelete;
-use Phalcon\Text;
+use App\Library\Text;
 
 class Topic extends Model
 {
@@ -73,14 +73,11 @@ class Topic extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_topic';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_topic');
 
         $this->addBehavior(
             new SoftDelete([

@@ -3,7 +3,7 @@
 
 namespace App\Caches;
 
-use Phalcon\Cache\Backend\Redis as RedisCache;
+use App\Library\Cache\Backend\Redis as RedisCache;
 use Phalcon\Di\Injectable;
 
 abstract class Cache extends Injectable

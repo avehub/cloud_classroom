@@ -14,6 +14,7 @@ use App\Services\Storage as StorageService;
 use App\Traits\Response as ResponseTrait;
 use App\Traits\Security as SecurityTrait;
 use Endroid\QrCode\QrCode;
+use Endroid\QrCode\Writer\PngWriter;
 
 class PublicController extends \Phalcon\Mvc\Controller
 {
@@ -74,13 +75,12 @@ class PublicController extends \Phalcon\Mvc\Controller
 
         $text = urldecode($text);
 
-        $qrCode = new QrCode($text);
+        $qrCode = new QrCode(data: $text, size: $size, margin: $margin);
 
-        $qrCode->setSize($size);
-        $qrCode->setMargin($margin);
+        $result = (new PngWriter())->write($qrCode);
 
         $this->response->setContentType('image/png');
-        $this->response->setContent($qrCode->writeString());
+        $this->response->setContent($result->getString());
 
         return $this->response;
     }

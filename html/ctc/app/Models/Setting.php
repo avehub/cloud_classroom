@@ -34,9 +34,11 @@ class Setting extends Model
      */
     public $item_value = '';
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_setting';
+        parent::initialize();
+
+        $this->setSource('kg_setting');
     }
 
 }

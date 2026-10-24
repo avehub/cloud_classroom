@@ -5,7 +5,7 @@ namespace App\Models;
 
 use App\Caches\MaxCategoryId as MaxCategoryIdCache;
 use Phalcon\Mvc\Model\Behavior\SoftDelete;
-use Phalcon\Text;
+use App\Library\Text;
 
 class Category extends Model
 {
@@ -116,14 +116,11 @@ class Category extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_category';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_category');
 
         $this->addBehavior(
             new SoftDelete([

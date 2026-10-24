@@ -4,7 +4,7 @@
 namespace App\Builders;
 
 use App\Repos\Question as QuestionRepo;
-use Phalcon\Text;
+use App\Library\Text;
 
 class QuestionFavoriteList extends Builder
 {

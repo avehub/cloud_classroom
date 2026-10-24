@@ -7,7 +7,7 @@ use App\Library\Validators\Common as CommonValidator;
 use App\Repos\Account as AccountRepo;
 use App\Repos\Course as CourseRepo;
 use GuzzleHttp\Client as HttpClient;
-use Phalcon\Logger\Adapter\File as FileLogger;
+use Phalcon\Logger\Logger as FileLogger;
 
 class DingTalkNotice extends Service
 {

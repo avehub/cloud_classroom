@@ -10,7 +10,7 @@ use App\Models\Comment as CommentModel;
 use App\Models\Question as QuestionModel;
 use App\Models\User as UserModel;
 use App\Repos\Chapter as ChapterRepo;
-use Phalcon\Di as Di;
+use Phalcon\Di\Di as Di;
 use Phalcon\Events\Manager as EventsManager;
 
 trait CountTrait

@@ -4,7 +4,7 @@
 namespace App\Traits;
 
 use App\Models\KgClient as KgClientModel;
-use Phalcon\Di;
+use Phalcon\Di\Di;
 use Phalcon\Http\Request;
 use WhichBrowser\Parser as BrowserParser;
 

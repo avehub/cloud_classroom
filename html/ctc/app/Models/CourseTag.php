@@ -34,9 +34,11 @@ class CourseTag extends Model
      */
     public $create_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_course_tag';
+        parent::initialize();
+
+        $this->setSource('kg_course_tag');
     }
 
     public function beforeCreate()

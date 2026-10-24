@@ -3,10 +3,10 @@
 
 namespace App\Listeners;
 
-use Phalcon\Db\Adapter as DbAdapter;
+use Phalcon\Db\Adapter\AdapterInterface as DbAdapter;
 use Phalcon\Db\Profiler as DbProfiler;
 use Phalcon\Events\Event as PhEvent;
-use Phalcon\Logger\Adapter\File as FileLogger;
+use Phalcon\Logger\Logger as FileLogger;
 
 class Db extends Listener
 {

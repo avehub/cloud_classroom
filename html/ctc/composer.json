@@ -1,38 +1,38 @@
 {
   "require": {
-    "ext-phalcon": "~3.4",
+    "php": ">=8.2",
+    "ext-phalcon": "~5.0",
     "ext-redis": "*",
     "ext-pdo": "*",
     "ext-json": "*",
     "ext-fileinfo": "*",
     "ext-gd": "*",
-    "phalcon/incubator": "^3.4",
-    "guzzlehttp/guzzle": "^6.5",
-    "swiftmailer/swiftmailer": "^6.0",
-    "peppeocchi/php-cron-scheduler": "^3.0",
-    "yansongda/pay": "^2.9",
+    "guzzlehttp/guzzle": "^7.5",
+    "swiftmailer/swiftmailer": "^6.3",
+    "peppeocchi/php-cron-scheduler": "^4.0",
+    "yansongda/pay": "^2.10",
     "tencentcloud/tencentcloud-sdk-php": "^3.0",
-    "qcloud/cos-sdk-v5": "^2.5",
-    "workerman/gateway-worker": "^3.0",
+    "qcloud/cos-sdk-v5": "^2.6",
+    "workerman/gateway-worker": "^3.1",
     "workerman/gatewayclient": "^3.0",
-    "whichbrowser/parser": "^2.0",
+    "whichbrowser/parser": "^2.1",
     "hightman/xunsearch": "^1.4",
-    "robmorgan/phinx": "^0.12",
-    "overtrue/wechat": "^4.2",
-    "endroid/qr-code": "^3.9",
-    "ezyang/htmlpurifier": "^4.14",
+    "robmorgan/phinx": "^0.13",
+    "overtrue/wechat": "^4.9",
+    "endroid/qr-code": "^4.8",
+    "ezyang/htmlpurifier": "^4.17",
     "zoujingli/ip2region": "^2.0"
   },
   "require-dev": {
-    "odan/phinx-migrations-generator": "^5.3",
-    "phalcon/ide-stubs": "^3.4"
+    "phalcon/ide-stubs": "^5.0"
   },
-  "repositories": {
-    "packagist": {
+  "repositories": [
+    {
+      "name": "packagist",
       "type": "composer",
-      "url": "https://mirrors.aliyun.com/composer"
+      "url": "https://mirrors.cloud.tencent.com/composer"
     }
-  },
+  ],
   "config": {
     "allow-plugins": {
       "easywechat-composer/easywechat-composer": true

@@ -6,8 +6,8 @@ namespace App\Traits;
 use App\Exceptions\Forbidden as ForbiddenException;
 use App\Exceptions\NotFound as NotFoundException;
 use App\Exceptions\Unauthorized as UnauthorizedException;
-use Phalcon\Config as Config;
-use Phalcon\Di as Di;
+use Phalcon\Config\Config as Config;
+use Phalcon\Di\Di as Di;
 use Phalcon\Http\Request as HttpRequest;
 use Phalcon\Http\Response as HttpResponse;
 

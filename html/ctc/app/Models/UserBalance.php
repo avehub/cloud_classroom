@@ -41,9 +41,11 @@ class UserBalance extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_user_balance';
+        parent::initialize();
+
+        $this->setSource('kg_user_balance');
     }
 
     public function beforeCreate()

@@ -7,9 +7,9 @@ use App\Library\Validators\Common as CommonValidator;
 use App\Services\Logic\Url\FullH5Url as FullH5UrlService;
 use App\Services\Logic\Url\ShareUrl as ShareUrlService;
 use App\Services\Storage as StorageService;
-use Phalcon\Config;
-use Phalcon\Di;
-use Phalcon\Text;
+use Phalcon\Config\Config;
+use Phalcon\Di\Di;
+use App\Library\Text;
 
 /**
  * 获取字符长度

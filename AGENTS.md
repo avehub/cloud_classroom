@@ -141,3 +141,21 @@ Agent 在进行任何需求开发、缺陷修复或功能调整时，必须严�
    ↓
 6. 交付结果说明
 ```
+
+---
+
+## 6. PHP 8.2 + Phalcon 5 迁移分支（feat/php82-phalcon5）
+
+> 本章节仅在迁移分支有效，合并到 main 后应改写为正式环境说明。
+
+1. **铁律：禁止在 `../class/html/`（主工作区）直接修改迁移代码**。主工作区的 `html/` 是生产容器（PHP 7.3）的 bind-mount，Phalcon 5 代码在 7.3 下会直接 fatal。迁移开发一律在 git worktree `../class-php82/` 中进行。
+2. **并行环境**：
+   - 镜像 `ctc/php:8.2`（`php82/Dockerfile`，PHP 8.2.35 + Phalcon 5.23.0 + psr/redis/igbinary/bcmath）
+   - 主工作区通过 `docker compose -f docker-compose.yml -f docker-compose.php82.yml up -d` 启动 `ctc-php82`（仅 php-fpm，不开 cron/websocket）与 `ctc-nginx82`（灰度入口 `http://127.0.0.1:8082/`）
+   - php82 挂载 worktree 的 `html/`，与生产 `./html` 完全隔离
+3. **已知的 Phalcon 5 适配决策**：
+   - `App\Library\Text` 为 `Phalcon\Text` 垫片类，新代码直接用 PHP 8 原生函数
+   - 缓存走 `App\Library\Cache\Backend\Redis` 自封装的兼容层（内部为 PSR-16 + Igbinary）
+   - Session 用 `App\Library\Session\RedisHandler`（自实现 SessionHandlerInterface），incubator 已移除
+   - `Phalcon\Crypt` → `Phalcon\Encryption\Crypt`（密文与 3.x 不互通，切流后旧 cookie/session 作废）
+4. **切流**：执行根目录 `switch-php82.sh` 清理 Redis 旧格式缓存/Session + 模板元数据缓存，再将 `nginx/conf.d/default.conf` 的 `fastcgi_pass` 指向 `php82:9000` 并 `docker compose restart nginx`；回滚反向操作并再执行一次脚本。

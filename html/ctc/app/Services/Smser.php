@@ -4,7 +4,7 @@
 namespace App\Services;
 
 use App\Library\Utils\AliyunSms as AliyunSmsUtil;
-use Phalcon\Logger\Adapter\File as FileLogger;
+use Phalcon\Logger\Logger as FileLogger;
 
 abstract class Smser extends Service
 {

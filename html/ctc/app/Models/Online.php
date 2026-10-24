@@ -55,9 +55,11 @@ class Online extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_online';
+        parent::initialize();
+
+        $this->setSource('kg_online');
     }
 
     public function beforeCreate()

@@ -111,9 +111,11 @@ class PointGiftRedeem extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_point_gift_redeem';
+        parent::initialize();
+
+        $this->setSource('kg_point_gift_redeem');
     }
 
     public function beforeCreate()

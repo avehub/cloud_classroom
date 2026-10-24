@@ -6,7 +6,7 @@ namespace App\Models;
 use App\Services\Sync\ArticleIndex as ArticleIndexSync;
 use App\Services\Sync\ArticleScore as ArticleScoreSync;
 use Phalcon\Mvc\Model\Behavior\SoftDelete;
-use Phalcon\Text;
+use App\Library\Text;
 
 class Article extends Model
 {
@@ -207,14 +207,11 @@ class Article extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_article';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_article');
 
         $this->addBehavior(
             new SoftDelete([

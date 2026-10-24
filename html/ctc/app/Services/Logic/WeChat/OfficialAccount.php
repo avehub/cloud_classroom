@@ -9,7 +9,7 @@ use App\Repos\User as UserRepo;
 use App\Services\Service as AppService;
 use App\Services\WeChat as WeChatService;
 use EasyWeChat\Kernel\Messages\Text as TextMessage;
-use Phalcon\Text;
+use App\Library\Text;
 
 class OfficialAccount extends AppService
 {

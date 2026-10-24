@@ -4,7 +4,7 @@
 namespace App\Models;
 
 use Phalcon\Mvc\Model\Behavior\SoftDelete;
-use Phalcon\Text;
+use App\Library\Text;
 
 class Slide extends Model
 {
@@ -107,14 +107,11 @@ class Slide extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_slide';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_slide');
 
         $this->addBehavior(
             new SoftDelete([

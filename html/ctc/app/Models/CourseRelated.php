@@ -34,9 +34,11 @@ class CourseRelated extends Model
      */
     public $create_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_course_related';
+        parent::initialize();
+
+        $this->setSource('kg_course_related');
     }
 
     public function beforeCreate()

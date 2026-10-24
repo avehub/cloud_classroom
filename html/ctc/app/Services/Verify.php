@@ -4,7 +4,7 @@
 namespace App\Services;
 
 use App\Library\Cache\Backend\Redis as RedisCache;
-use Phalcon\Text;
+use App\Library\Text;
 
 class Verify extends Service
 {

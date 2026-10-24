@@ -6,7 +6,7 @@ namespace App\Models;
 use App\Caches\MaxUserId as MaxUserIdCache;
 use App\Caches\User as UserCache;
 use Phalcon\Mvc\Model\Behavior\SoftDelete;
-use Phalcon\Text;
+use App\Library\Text;
 
 class User extends Model
 {
@@ -199,14 +199,11 @@ class User extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_user';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_user');
 
         $this->keepSnapshots(true);
 

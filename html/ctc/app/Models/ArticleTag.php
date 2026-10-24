@@ -34,9 +34,11 @@ class ArticleTag extends Model
      */
     public $create_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_article_tag';
+        parent::initialize();
+
+        $this->setSource('kg_article_tag');
     }
 
     public function beforeCreate()

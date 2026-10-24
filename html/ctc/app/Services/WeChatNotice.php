@@ -6,7 +6,7 @@ namespace App\Services;
 use App\Models\Connect as ConnectModel;
 use App\Repos\Connect as ConnectRepo;
 use App\Services\WeChat as WeChatService;
-use Phalcon\Logger\Adapter\File as FileLogger;
+use Phalcon\Logger\Logger as FileLogger;
 
 abstract class WeChatNotice extends Service
 {

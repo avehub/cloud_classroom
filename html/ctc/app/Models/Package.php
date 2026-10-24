@@ -5,7 +5,7 @@ namespace App\Models;
 
 use App\Caches\MaxPackageId as MaxPackageIdCache;
 use Phalcon\Mvc\Model\Behavior\SoftDelete;
-use Phalcon\Text;
+use App\Library\Text;
 
 class Package extends Model
 {
@@ -87,14 +87,11 @@ class Package extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_package';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_package');
 
         $this->addBehavior(
             new SoftDelete([

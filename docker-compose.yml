@@ -39,7 +39,7 @@ services:
 
   php:
     build: ./php
-    image: ctc/php:latest
+    image: ctc/php:8.2
     container_name: ctc-php
     ports:
       - "8282:8282"
@@ -51,7 +51,9 @@ services:
       - ./html:/var/www/html
       - ./php/log:/var/log/php-fpm
       - ./php/conf.d/my.ini:/usr/local/etc/php/conf.d/my.ini
+      - ./php/conf.d/zz-prod.ini:/usr/local/etc/php/conf.d/zz-prod.ini:ro
       - ./php/fpm/zz-ctc.conf:/usr/local/etc/php-fpm.d/zz-ctc.conf:ro
+      - ./php/cron.d/course:/etc/cron.d/course:ro
       - ./php/supervisor/conf.d:/etc/supervisor/conf.d
       - ./php/supervisor/log:/var/log/supervisor
     command: ["supervisord", "-n"]
@@ -178,6 +180,7 @@ services:
       options:
         max-size: "100m"
         max-file: "3"
+
 
 networks:
   koogua:

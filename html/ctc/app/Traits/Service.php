@@ -6,9 +6,9 @@ namespace App\Traits;
 use App\Caches\Setting as SettingCache;
 use App\Library\Cache\Backend\Redis as RedisCache;
 use App\Library\Logger as AppLogger;
-use Phalcon\Config as PhConfig;
-use Phalcon\Di as Di;
-use Phalcon\Logger\Adapter\File as PhLogger;
+use Phalcon\Config\Config as PhConfig;
+use Phalcon\Di\Di as Di;
+use Phalcon\Logger\Logger as PhLogger;
 
 trait Service
 {

@@ -7,7 +7,7 @@ use App\Caches\MaxCourseId as MaxCourseIdCache;
 use App\Services\Sync\CourseIndex as CourseIndexSync;
 use App\Services\Sync\CourseScore as CourseScoreSync;
 use Phalcon\Mvc\Model\Behavior\SoftDelete;
-use Phalcon\Text;
+use App\Library\Text;
 
 class Course extends Model
 {
@@ -286,14 +286,11 @@ class Course extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_course';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_course');
 
         $this->addBehavior(
             new SoftDelete([

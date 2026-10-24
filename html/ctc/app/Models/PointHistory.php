@@ -89,9 +89,11 @@ class PointHistory extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_point_history';
+        parent::initialize();
+
+        $this->setSource('kg_point_history');
     }
 
     public function beforeCreate()

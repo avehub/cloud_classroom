@@ -3,7 +3,7 @@
 
 namespace App\Library\Utils;
 
-use Phalcon\Text;
+use App\Library\Text;
 
 class Password
 {

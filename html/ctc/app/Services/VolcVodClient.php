@@ -3,7 +3,7 @@
 
 namespace App\Services;
 
-use Phalcon\Logger\Adapter\File as FileLogger;
+use Phalcon\Logger\Logger as FileLogger;
 
 /**
  * 火山引擎视频点播(Volcengine VOD)客户端

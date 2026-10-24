@@ -48,9 +48,11 @@ class QuestionLike extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_question_like';
+        parent::initialize();
+
+        $this->setSource('kg_question_like');
     }
 
     public function beforeCreate()

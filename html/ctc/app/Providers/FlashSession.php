@@ -14,12 +14,16 @@ class FlashSession extends Provider
     {
         $this->di->setShared($this->serviceName, function () {
 
-            return new PhFlashSession([
+            $flash = new PhFlashSession();
+
+            $flash->setCssClasses([
                 'error' => 'alert alert-danger',
                 'success' => 'alert alert-success',
                 'notice' => 'alert alert-info',
                 'warning' => 'alert alert-warning',
             ]);
+
+            return $flash;
         });
     }
 

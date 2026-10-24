@@ -71,14 +71,11 @@ class UserSession extends Model
      */
     public $update_time = 0;
 
-    public function getSource(): string
-    {
-        return 'kg_user_session';
-    }
-
     public function initialize()
     {
         parent::initialize();
+
+        $this->setSource('kg_user_session');
 
         $this->addBehavior(
             new SoftDelete([

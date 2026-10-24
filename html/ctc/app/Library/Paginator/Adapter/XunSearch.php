@@ -4,10 +4,11 @@
 namespace App\Library\Paginator\Adapter;
 
 use App\Library\Paginator\Query as PaginatorQuery;
+use App\Library\Paginator\Repository;
 use App\Library\Validators\Common as CommonValidator;
-use Phalcon\Paginator\Adapter as PaginatorAdapter;
+use Phalcon\Paginator\Adapter\AbstractAdapter as PaginatorAdapter;
 use Phalcon\Paginator\Exception as PaginatorException;
-use stdClass;
+use Phalcon\Paginator\RepositoryInterface;
 
 /**
  *
@@ -29,8 +30,6 @@ use stdClass;
  */
 class XunSearch extends PaginatorAdapter
 {
-
-    protected $config;
 
     protected $baseUrl;
 
@@ -58,9 +57,12 @@ class XunSearch extends PaginatorAdapter
             throw new PaginatorException('Invalid highlight parameter');
         }
 
+        $config['page'] = $config['page'] ?? 1;
+        $config['limit'] = $config['limit'] ?? 12;
+
+        parent::__construct($config);
+
         $this->config = $config;
-        $this->_page = $config['page'] ?? 1;
-        $this->_limitRows = $config['limit'] ?? 12;
 
         $query = new PaginatorQuery();
 
@@ -68,15 +70,15 @@ class XunSearch extends PaginatorAdapter
         $this->params = $query->getParams();
     }
 
-    public function paginate(): stdClass
+    public function paginate(): RepositoryInterface
     {
         /**
          * @var \XS $xs
          */
         $xs = $this->config['xs'];
 
-        $page = $this->_page;
-        $limit = $this->_limitRows;
+        $page = $this->page;
+        $limit = $this->getLimit();
         $offset = ($page - 1) * $limit;
 
         $search = $xs->getSearch();
@@ -103,27 +105,26 @@ class XunSearch extends PaginatorAdapter
             $items[] = $item;
         }
 
-        $totalPages = ceil($totalCount / $limit);
+        $totalPages = (int)ceil($totalCount / $limit);
 
-        $pager = new stdClass();
+        $pager = new Repository();
 
-        $pager->first = 1;
-        $pager->previous = $page > 1 ? $page - 1 : 1;
-        $pager->next = $page < $totalPages ? $page + 1 : $page;
-        $pager->last = $totalPages;
-        $pager->total_items = $totalCount;
-        $pager->total_pages = $totalPages;
-        $pager->items = $items;
-
-        $pager->first = $this->buildPageUrl($pager->first);
-        $pager->previous = $this->buildPageUrl($pager->previous);
-        $pager->next = $this->buildPageUrl($pager->next);
-        $pager->last = $this->buildPageUrl($pager->last);
+        $pager->setProperties([
+            'items' => $items,
+            'total_items' => $totalCount,
+            'total_pages' => $totalPages,
+            'current' => $page,
+            'limit' => $limit,
+            'first' => $this->buildPageUrl(1),
+            'previous' => $this->buildPageUrl($page > 1 ? $page - 1 : 1),
+            'next' => $this->buildPageUrl($page < $totalPages ? $page + 1 : $page),
+            'last' => $this->buildPageUrl($totalPages),
+        ]);
 
         return $pager;
     }
 
-    public function getPaginate(): stdClass
+    public function getPaginate(): RepositoryInterface
     {
         return $this->paginate();
     }

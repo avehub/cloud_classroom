@@ -12,10 +12,10 @@ use App\Providers\EventsManager as EventsManagerProvider;
 use App\Providers\Logger as LoggerProvider;
 use App\Providers\MetaData as MetaDataProvider;
 use App\Providers\Provider as AppProvider;
+use Phalcon\Autoload\Loader;
 use Phalcon\Cli\Console;
 use Phalcon\Di\FactoryDefault\Cli;
-use Phalcon\Loader;
-use Phalcon\Text;
+use App\Library\Text;
 
 class ConsoleKernel extends Kernel
 {
@@ -65,12 +65,12 @@ class ConsoleKernel extends Kernel
 
     protected function registerLoaders()
     {
-        $this->loader->registerNamespaces([
+        $this->loader->setNamespaces([
             'App' => app_path(),
             'Bootstrap' => bootstrap_path(),
         ]);
 
-        $this->loader->registerFiles([
+        $this->loader->setFiles([
             vendor_path('autoload.php'),
             app_path('Library/Helper.php'),
         ]);

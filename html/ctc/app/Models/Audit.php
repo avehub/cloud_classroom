@@ -62,9 +62,11 @@ class Audit extends Model
      */
     public $create_time;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_audit';
+        parent::initialize();
+
+        $this->setSource('kg_audit');
     }
 
     public function beforeCreate()

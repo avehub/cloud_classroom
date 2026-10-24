@@ -34,9 +34,11 @@ class TagFollow extends Model
      */
     public $create_time = 0;
 
-    public function getSource(): string
+    public function initialize()
     {
-        return 'kg_tag_follow';
+        parent::initialize();
+
+        $this->setSource('kg_tag_follow');
     }
 
     public function beforeCreate()

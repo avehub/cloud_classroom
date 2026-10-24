@@ -5,7 +5,7 @@ namespace App\Listeners;
 
 use App\Services\Service as AppService;
 use App\Traits\Service as ServiceTrait;
-use Phalcon\Mvc\User\Plugin as UserPlugin;
+use Phalcon\Di\Injectable as UserPlugin;
 
 class Listener extends UserPlugin
 {
