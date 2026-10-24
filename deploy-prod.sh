@@ -100,15 +100,10 @@ fi
 success "MySQL 服务已就绪！"
 
 info "====== 6. 检查并自动安装 PHP 依赖与数据库迁移 ======"
-# 检查 vendor 目录是否存在，若不存在则自动执行 composer install
-if [ ! -d "html/ctc/vendor" ] || [ ! -f "html/ctc/vendor/autoload.php" ]; then
-    info "未检测到 vendor 依赖，正在容器内配置国内镜像并安装 Composer 依赖..."
-    docker compose exec -T -w /var/www/html/ctc php composer config -g repo.packagist composer https://mirrors.aliyun.com/composer/ || true
-    docker compose exec -T -w /var/www/html/ctc php composer install --no-dev --prefer-dist --optimize-autoloader
-    success "Composer 依赖安装完成！"
-else
-    docker compose exec -T -w /var/www/html/ctc php composer dump-autoload --optimize || true
-fi
+# 每次部署都按 composer.lock 对齐依赖，避免沿用旧 PHP 7.3 vendor
+info "安装/更新 Composer 依赖..."
+docker compose exec -T -w /var/www/html/ctc php   composer install --no-dev --prefer-dist --optimize-autoloader
+success "Composer 依赖安装完成！"
 
 info "执行数据库结构迁移 (Phinx)..."
 docker compose exec -T -w /var/www/html/ctc php php vendor/bin/phinx migrate -c phinx.php || true
