@@ -181,6 +181,63 @@ services:
         max-size: "100m"
         max-file: "3"
 
+  # ---------------------------------------------------------------------------
+  # 可选灰度服务：docker compose --profile gray up -d php82 nginx82
+  # 默认不启动，生产 docker compose up -d 不会创建这两个容器。
+  # 同一份 compose 在 amd64/arm64 上均可使用：
+  #   - 生产 php 拉取多架构镜像 PHP_IMAGE
+  #   - 本地灰度用 ./php82 构建当前架构镜像
+  # ---------------------------------------------------------------------------
+  php82:
+    profiles: ["gray"]
+    build: ./php82
+    image: ctc/php:8.2
+    container_name: ctc-php82
+    expose:
+      - 9000
+    env_file:
+      - .env
+    environment:
+      REDIS_INDEX: 1
+    volumes:
+      - ./html:/var/www/html
+      - ./php82/log:/var/log/php-fpm
+      - ./php/conf.d/my.ini:/usr/local/etc/php/conf.d/my.ini
+      - ./php/fpm/zz-ctc.conf:/usr/local/etc/php-fpm.d/zz-ctc.conf:ro
+      - ./php82/supervisor/log:/var/log/supervisor
+      - ./php82/supervisor/conf.d:/etc/supervisor/conf.d
+    command: ["supervisord", "-n"]
+    networks:
+      - koogua
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "3"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  nginx82:
+    profiles: ["gray"]
+    image: nginx:1.18
+    container_name: ctc-nginx82
+    ports:
+      - "127.0.0.1:8082:80"
+    volumes:
+      - ./html:/var/www/html
+      - ./nginx82/conf.d:/etc/nginx/conf.d
+      - ./php82/log:/var/log/nginx
+    networks:
+      - koogua
+    restart: unless-stopped
+    depends_on:
+      - php82
+
+
 networks:
   koogua:
     driver: bridge

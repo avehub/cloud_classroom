@@ -1,58 +1,10 @@
-services:
-
-  # PHP 8.2 + Phalcon 5 并行环境：仅跑 php-fpm 供灰度验证
-  # 挂载 git worktree（../class-php82），与生产 ./html 完全隔离
-  # 不启动 cron / websocket，避免定时任务与长连接在新旧环境重复执行
-  php82:
-    build: ../class-php82/php82
-    image: ctc/php:8.2
-    container_name: ctc-php82
-    expose:
-      - 9000
-    env_file:
-      - .env
-    environment:
-      # 灰度环境与生产共用 Redis，但序列化格式（Phalcon 5 vs Phalcon 3）互不兼容
-      # 必须使用独立的 Redis 库，避免缓存互相污染导致反序列化异常
-      REDIS_INDEX: 1
-    volumes:
-      - ../class-php82/html:/var/www/html
-      - ./php82/log:/var/log/php-fpm
-      - ./php/conf.d/my.ini:/usr/local/etc/php/conf.d/my.ini
-      - ./php/fpm/zz-ctc.conf:/usr/local/etc/php-fpm.d/zz-ctc.conf:ro
-      - ./php82/supervisor/log:/var/log/supervisor
-      - ../class-php82/php82/supervisor/conf.d:/etc/supervisor/conf.d
-    command: ["supervisord", "-n"]
-    networks:
-      - koogua
-    restart: unless-stopped
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "100m"
-        max-file: "3"
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
-  # 灰度入口：独立 nginx，监听 8080，转发到 ctc-php82，不改动生产 nginx
-  nginx82:
-    image: nginx:1.18
-    container_name: ctc-nginx82
-    ports:
-      - "127.0.0.1:8082:80"
-    volumes:
-      - ../class-php82/html:/var/www/html
-      - ../class-php82/nginx82/conf.d:/etc/nginx/conf.d
-      - ./php82/log:/var/log/nginx
-    networks:
-      - koogua
-    restart: unless-stopped
-    depends_on:
-      - php82
-
-networks:
-  koogua:
-    driver: bridge
+# Deprecated.
+#
+# Gray services have moved into docker-compose.yml under the "gray" profile.
+# Start them with:
+#
+#   docker compose --profile gray up -d php82 nginx82
+#
+# This file is kept as an empty compatibility override so existing commands
+# using "-f docker-compose.yml -f docker-compose.php82.yml" do not fail.
+services: {}
