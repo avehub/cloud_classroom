@@ -18,7 +18,7 @@ class MaintainTask extends Task
      * @param array $params
      * @command: php console.php maintain rebuild_index_course_cache
      */
-    public function rebuildIndexCourseCacheAction($params)
+    public function rebuildIndexCourseCacheAction($params = [])
     {
         $section = $params[0] ?? null;
 
