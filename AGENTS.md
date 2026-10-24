@@ -149,6 +149,6 @@ Agent 在进行任何需求开发、缺陷修复或功能调整时，必须严�
 1. 生产 PHP 运行镜像已统一为 `php/Dockerfile`（PHP 8.2.35 + Phalcon 5.23），不再使用 `php82/` 灰度目录。
 2. `docker-compose.yml` 的 `php` 服务使用 `build: ./php`，服务名、容器名、端口（9000/8282）保持不变；Nginx 仍使用原服务与 80/443 端口。
 3. 发布统一使用 `./reload-prod.sh`：git pull → build php → up php → composer install → Phinx migrate → 清理框架缓存 → 重启 FPM/WebSocket → 重启 Nginx。
-4. 首次从 Phalcon 3 切到 5 时，`reload-prod.sh` 会清理一次 Redis 业务库（日志会提示），完成后写入 `.php82-cutover-done`，后续不再重复清理。
+4. 首次从 Phalcon 3 切到 5 时，`reload-prod.sh` 会清理一次 Redis 业务库（日志会提示），完成后写入 `.phalcon5-cutover-done`，后续不再重复清理。
 5. 生产 `.env`、后台配置、上传目录不在 git 中，发布时不得覆盖。
 6. 回退时部署上一个镜像/commit，并在需要时把 `kg_vip.expiry=0` 的永久会员先置为 `published=0`。

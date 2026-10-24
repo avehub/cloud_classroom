@@ -55,4 +55,4 @@
 /php82/supervisor/log/
 
 # one-time PHP 8.2 cutover marker
-/.php82-cutover-done
+/.phalcon5-cutover-done

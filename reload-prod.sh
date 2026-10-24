@@ -20,7 +20,7 @@ echo "==> 3. 启动/重建 PHP 服务..."
 docker compose up -d php
 
 echo "==> 4. 首次 PHP 8.2 切换：清理 Phalcon 3 缓存..."
-CUTOVER_MARKER="${PWD}/.php82-cutover-done"
+CUTOVER_MARKER="${PWD}/.phalcon5-cutover-done"
 if [ ! -f "${CUTOVER_MARKER}" ]; then
   REDIS_PASSWORD="$(awk -F= '/^REDIS_PASSWORD=/{sub(/^[^=]*=/,""); gsub(/["\r]/,""); print}' .env)"
   REDIS_INDEX="$(awk -F= '/^REDIS_INDEX=/{sub(/^[^=]*=/,""); gsub(/["\r]/,""); print}' .env)"
