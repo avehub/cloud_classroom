@@ -21,6 +21,8 @@ class ConnectController extends Controller
 
         $service = new ConnectService();
 
+        $redirect = $service->normalizeWechatRedirect($redirect, $this->request->getHttpHost());
+
         if ($redirect) {
             $service->setWechatRedirectCache($redirect);
         }
@@ -39,7 +41,7 @@ class ConnectController extends Controller
 
         $data = $service->handleCallback(ConnectModel::PROVIDER_WECHAT_OA);
 
-        $redirect = $service->getWechatRedirectCache();
+        $redirect = $service->normalizeWechatRedirect($service->getWechatRedirectCache(), $this->request->getHttpHost());
 
         if ($redirect) {
             $service->removeWechatRedirectCache();

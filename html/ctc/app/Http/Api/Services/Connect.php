@@ -39,6 +39,86 @@ class Connect extends Service
         $this->session->set('wechat_redirect', $redirect);
     }
 
+    /**
+     * 规范化微信回跳地址，防止把登录 token 重定向到外部域名。
+     *
+     * @param string $redirect
+     * @param string|null $currentHost
+     * @return string
+     */
+    public function normalizeWechatRedirect($redirect, $currentHost = null)
+    {
+        $redirect = trim((string)$redirect);
+
+        if ($redirect === '') return '';
+
+        if (strpos($redirect, '//') === 0) return '';
+
+        $parts = parse_url($redirect);
+
+        if ($parts === false) return '';
+
+        if (empty($parts['scheme'])) {
+            return empty($parts['host']) ? $redirect : '';
+        }
+
+        $scheme = strtolower($parts['scheme']);
+
+        if (!in_array($scheme, ['http', 'https'], true)) return '';
+
+        if (empty($parts['host'])) return '';
+
+        $host = $this->normalizeHost($parts['host']);
+
+        if (!$host) return '';
+
+        if (!in_array($host, $this->getAllowedRedirectHosts($currentHost), true)) {
+            return '';
+        }
+
+        return $redirect;
+    }
+
+    /**
+     * @param string|null $currentHost
+     * @return array
+     */
+    protected function getAllowedRedirectHosts($currentHost = null)
+    {
+        $hosts = [];
+
+        if ($currentHost) $hosts[] = $this->normalizeHost($currentHost);
+
+        $siteHost = parse_url((string)getenv('SITE_URL'), PHP_URL_HOST);
+
+        if ($siteHost) $hosts[] = $this->normalizeHost($siteHost);
+
+        $siteDomain = getenv('SITE_DOMAIN') ?: '';
+
+        if ($siteDomain) $hosts[] = $this->normalizeHost($siteDomain);
+
+        $extra = getenv('OAUTH_REDIRECT_ALLOWED_HOSTS') ?: '';
+
+        foreach (preg_split('/\s*,\s*/', $extra) as $item) {
+            if ($item) $hosts[] = $this->normalizeHost($item);
+        }
+
+        return array_values(array_unique(array_filter($hosts)));
+    }
+
+    /**
+     * @param string $host
+     * @return string
+     */
+    protected function normalizeHost($host)
+    {
+        $host = strtolower(trim((string)$host));
+
+        $host = trim($host, '[]');
+
+        return preg_replace('/:\d+$/', '', $host);
+    }
+
     public function removeWechatRedirectCache()
     {
         $this->session->remove('wechat_redirect');
