@@ -23,11 +23,18 @@ class AccountInfo extends LogicService
 
         $account = $accountRepo->findById($user->id);
 
+        $hasPassword = $account->password !== '';
+        $hasLoginName = $account->phone !== '' || $account->email !== '';
+
         return [
             'id' => $account->id,
             'email' => $account->email,
             'phone' => $account->phone,
             'password' => $account->password,
+            'has_password' => $hasPassword,
+            'has_login_name' => $hasLoginName,
+            'need_set_password' => !$hasPassword,
+            'need_bind_phone' => !$hasLoginName,
             'create_time' => $account->create_time,
             'update_time' => $account->update_time,
         ];

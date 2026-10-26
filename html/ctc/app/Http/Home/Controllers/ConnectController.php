@@ -3,8 +3,10 @@
 
 namespace App\Http\Home\Controllers;
 
+use App\Exceptions\BadRequest as BadRequestException;
 use App\Http\Home\Services\Connect as ConnectService;
 use App\Models\Connect as ConnectModel;
+use App\Services\Logic\Account\Status as StatusService;
 
 /**
  * @RoutePrefix("/oauth")
@@ -53,7 +55,7 @@ class ConnectController extends Controller
      */
     public function qqCallbackAction()
     {
-        $this->handleCallback(ConnectModel::PROVIDER_QQ);
+        return $this->handleCallback(ConnectModel::PROVIDER_QQ);
     }
 
     /**
@@ -61,7 +63,7 @@ class ConnectController extends Controller
      */
     public function weixinCallbackAction()
     {
-        $this->handleCallback(ConnectModel::PROVIDER_WEIXIN);
+        return $this->handleCallback(ConnectModel::PROVIDER_WEIXIN);
     }
 
     /**
@@ -69,7 +71,7 @@ class ConnectController extends Controller
      */
     public function weiboCallbackAction()
     {
-        $this->handleCallback(ConnectModel::PROVIDER_WEIBO);
+        return $this->handleCallback(ConnectModel::PROVIDER_WEIBO);
     }
 
     /**
@@ -81,6 +83,27 @@ class ConnectController extends Controller
     }
 
     /**
+     * @Get("/bind", name="home.oauth.bind")
+     */
+    public function bindAction()
+    {
+        $service = new ConnectService();
+
+        try {
+
+            $service->getBindOpenUser();
+
+        } catch (BadRequestException $e) {
+
+            return $this->response->redirect(['for' => 'home.account.login']);
+        }
+
+        $this->seo->prependTitle('绑定帐号');
+
+        $this->view->pick('connect/bind');
+    }
+
+    /**
      * @Post("/bind/login", name="home.oauth.bind_login")
      */
     public function bindLoginAction()
@@ -88,20 +111,6 @@ class ConnectController extends Controller
         $service = new ConnectService();
 
         $service->bindLogin();
-
-        $location = $this->url->get(['for' => 'home.uc.account']);
-
-        return $this->jsonSuccess(['location' => $location]);
-    }
-
-    /**
-     * @Post("/bind/register", name="home.oauth.bind_register")
-     */
-    public function bindRegisterAction()
-    {
-        $service = new ConnectService();
-
-        $service->bindRegister();
 
         $location = $this->url->get(['for' => 'home.uc.account']);
 
@@ -119,20 +128,83 @@ class ConnectController extends Controller
         $connect = $service->getConnectRelation($openUser['id'], $openUser['provider']);
 
         if ($this->authUser->id > 0 && $openUser) {
-            $service->bindUser($openUser);
-            return $this->response->redirect(['for' => 'home.uc.account']);
+
+            try {
+
+                $service->bindUser($openUser);
+
+            } catch (BadRequestException $e) {
+
+                $location = $this->url->get(['for' => 'home.uc.account'], ['oauth_error' => 1]);
+
+                return $this->topRedirect($location);
+            }
+
+            $location = $this->url->get(['for' => 'home.uc.account']);
+
+            return $this->topRedirect($location);
         }
 
         if ($this->authUser->id == 0 && $connect) {
-            $service->authConnectLogin($connect);
-            return $this->response->redirect(['for' => 'home.index']);
+
+            $user = $service->authConnectLogin($connect);
+
+            $location = $this->url->get(['for' => 'home.index']);
+
+            $location = $this->withPasswordSetup($location, $user);
+
+            return $this->topRedirect($location);
         }
 
-        $this->seo->prependTitle('绑定帐号');
+        if ($provider == ConnectModel::PROVIDER_WEIXIN) {
 
-        $this->view->pick('connect/bind');
-        $this->view->setVar('provider', $provider);
-        $this->view->setVar('open_user', $openUser);
+            $result = $service->authConnectRegister($openUser);
+
+            $user = $result[0];
+
+            $location = $this->url->get(['for' => 'home.index']);
+
+            $location = $this->withPasswordSetup($location, $user);
+
+            return $this->topRedirect($location);
+        }
+
+        $service->setBindSession($openUser);
+
+        $location = $this->url->get(['for' => 'home.oauth.bind']);
+
+        return $this->topRedirect($location);
+    }
+
+    protected function withPasswordSetup($location, $user)
+    {
+        $statusService = new StatusService();
+
+        $status = $statusService->handle($user);
+
+        if ($status['need_set_password']) {
+            $location = $this->appendQuery($location, ['set_password' => 1]);
+        }
+
+        return $location;
+    }
+
+    protected function topRedirect($location)
+    {
+        $url = json_encode($location, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $fallback = htmlspecialchars($location, ENT_QUOTES, 'UTF-8');
+
+        $html = '<!DOCTYPE html><html lang="zh-CN-Hans"><head><meta charset="UTF-8">'
+            . '<meta http-equiv="refresh" content="0;url=' . $fallback . '"></head><body>'
+            . '<script>window.top.location.replace(' . $url . ');</script>'
+            . '<a href="' . $fallback . '">继续访问</a></body></html>';
+
+        $this->view->disable();
+
+        $this->response->setContentType('text/html', 'UTF-8');
+        $this->response->setContent($html);
+
+        return $this->response;
     }
 
 }

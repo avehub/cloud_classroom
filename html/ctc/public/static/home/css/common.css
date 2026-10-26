@@ -1843,6 +1843,51 @@
     margin: 0 10px;
 }
 
+.login-wrap .auto-register-tips,
+.login-wrap .agreement-tips {
+    margin-top: -10px;
+    margin-bottom: 20px;
+    font-size: 12px;
+    color: #999;
+    text-align: center;
+}
+
+.login-wrap .agreement-tips a {
+    color: #1e9fff;
+}
+
+.password-setup-layer {
+    padding: 25px 30px 5px;
+}
+
+.password-setup-layer .tips {
+    margin-bottom: 20px;
+    color: #666;
+    line-height: 24px;
+}
+
+.password-setup-layer .tips-alert {
+    color: #ff5722;
+}
+
+.password-setup-layer .layui-form-label {
+    width: 95px;
+}
+
+.password-setup-layer .layui-input-block {
+    margin-left: 125px;
+}
+
+.security-form .tips {
+    margin-bottom: 20px;
+    color: #666;
+    line-height: 24px;
+}
+
+.security-form .tips-alert {
+    color: #ff5722;
+}
+
 .login-qq {
     color: dodgerblue;
 }

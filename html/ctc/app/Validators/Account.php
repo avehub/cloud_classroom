@@ -41,14 +41,17 @@ class Account extends Validator
 
     public function checkLoginName($name)
     {
-        $isPhone = CommonValidator::phone($name);
-        $isEmail = CommonValidator::email($name);
-
-        $loginNameOk = $isPhone || $isEmail;
-
-        if (!$loginNameOk) {
-            throw new BadRequestException('account.invalid_login_name');
+        if (CommonValidator::phone($name)) {
+            $this->checkPhone($name);
+            return;
         }
+
+        if (CommonValidator::email($name)) {
+            $this->checkEmail($name);
+            return;
+        }
+
+        throw new BadRequestException('account.invalid_login_name');
     }
 
     public function checkPhone($phone)
@@ -64,6 +67,10 @@ class Account extends Validator
     {
         if (!CommonValidator::email($email)) {
             throw new BadRequestException('account.invalid_email');
+        }
+
+        if (strlen($email) > 30) {
+            throw new BadRequestException('account.email_too_long');
         }
 
         return $email;
@@ -166,6 +173,10 @@ class Account extends Validator
         $this->checkLoginName($name);
 
         $account = $this->checkAccount($name);
+
+        if ($account->password === '') {
+            throw new BadRequestException('account.password_not_set');
+        }
 
         if (!PasswordUtil::checkHash($password, $account->salt, $account->password)) {
             throw new BadRequestException('account.login_pwd_incorrect');

@@ -13,15 +13,11 @@
     <div class="login-wrap wrap">
         <div class="layui-tabs login-tab">
             <ul class="layui-tabs-header">
-                <li class="layui-this">绑定已有帐号</li>
-                <li>注册并绑定帐号</li>
+                <li class="layui-this">登录并绑定已有帐号</li>
             </ul>
             <div class="layui-tabs-body">
                 <div class="layui-tabs-item layui-show">
                     {{ partial('connect/bind_login') }}
-                </div>
-                <div class="layui-tabs-item">
-                    {{ partial('connect/bind_register') }}
                 </div>
             </div>
         </div>
@@ -32,6 +28,5 @@
 {% block include_js %}
 
     {{ js_include('home/js/connect.bind.js') }}
-    {{ js_include('home/js/captcha.verify.js') }}
 
 {% endblock %}

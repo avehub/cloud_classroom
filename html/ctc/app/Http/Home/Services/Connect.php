@@ -3,12 +3,13 @@
 
 namespace App\Http\Home\Services;
 
+use App\Exceptions\BadRequest as BadRequestException;
 use App\Models\Connect as ConnectModel;
 use App\Models\User as UserModel;
 use App\Repos\Connect as ConnectRepo;
 use App\Repos\User as UserRepo;
 use App\Services\Auth\Home as AuthService;
-use App\Services\Logic\Account\Register as RegisterService;
+use App\Services\Logic\Account\OAuthRegister as OAuthRegisterService;
 use App\Services\Logic\Notice\External\AccountLogin as AccountLoginNotice;
 use App\Services\OAuth\QQ as QQAuth;
 use App\Services\OAuth\WeiBo as WeiBoAuth;
@@ -22,42 +23,13 @@ class Connect extends Service
     {
         $post = $this->request->getPost();
 
-        $auth = $this->getConnectAuth($post['provider']);
-
-        $auth->checkState($post['state']);
+        $openUser = $this->getBindOpenUser();
 
         $validator = new AccountValidator();
 
         $user = $validator->checkUserLogin($post['account'], $post['password']);
 
-        $openUser = json_decode($post['open_user'], true);
-
-        $this->handleConnectRelation($user, $openUser);
-
-        $this->handleLoginNotice($user);
-
-        $auth = $this->getAppAuth();
-
-        $auth->saveAuthInfo($user);
-    }
-
-    public function bindRegister()
-    {
-        $post = $this->request->getPost();
-
-        $auth = $this->getConnectAuth($post['provider']);
-
-        $auth->checkState($post['state']);
-
-        $openUser = json_decode($post['open_user'], true);
-
-        $registerService = new RegisterService();
-
-        $account = $registerService->handle();
-
-        $userRepo = new UserRepo();
-
-        $user = $userRepo->findById($account->id);
+        $validator->checkIfAllowLogin($user);
 
         $this->handleConnectRelation($user, $openUser);
 
@@ -67,7 +39,9 @@ class Connect extends Service
 
         $auth->saveAuthInfo($user);
 
-        $this->eventsManager->fire('Account:afterRegister', $this, $user);
+        $this->clearBindSession();
+
+        return $user;
     }
 
     public function bindUser(array $openUser)
@@ -75,6 +49,8 @@ class Connect extends Service
         $user = $this->getLoginUser();
 
         $this->handleConnectRelation($user, $openUser);
+
+        return $user;
     }
 
     public function authConnectLogin(ConnectModel $connect)
@@ -83,9 +59,17 @@ class Connect extends Service
 
         $user = $userRepo->findById($connect->user_id);
 
+        if (!$user || $user->deleted == 1) {
+            throw new BadRequestException('user.not_found');
+        }
+
         $validator = new AccountValidator();
 
         $validator->checkIfAllowLogin($user);
+
+        if ($connect->deleted == 1) {
+            $connect->deleted = 0;
+        }
 
         $connect->update_time = time();
 
@@ -96,6 +80,36 @@ class Connect extends Service
         $auth = $this->getAppAuth();
 
         $auth->saveAuthInfo($user);
+
+        return $user;
+    }
+
+    /**
+     * @param array $openUser
+     * @return array [UserModel, bool]
+     */
+    public function authConnectRegister(array $openUser): array
+    {
+        $registerService = new OAuthRegisterService();
+
+        list($user, $isNewUser) = $registerService->handle($openUser);
+
+        $validator = new AccountValidator();
+
+        $validator->checkIfAllowLogin($user);
+
+        $auth = $this->getAppAuth();
+
+        $auth->saveAuthInfo($user);
+
+        if ($isNewUser) {
+            $this->eventsManager->fire('Account:afterRegister', $this, $user);
+            $this->handleLoginNotice($user);
+        } else {
+            $this->eventsManager->fire('Account:afterLogin', $this, $user);
+        }
+
+        return [$user, $isNewUser];
     }
 
     public function getAuthorizeUrl($provider)
@@ -123,6 +137,30 @@ class Connect extends Service
         $connectRepo = new ConnectRepo();
 
         return $connectRepo->findByOpenId($openId, $provider);
+    }
+
+    public function setBindSession(array $openUser)
+    {
+        $this->session->set('oauth_bind_open_user', $openUser);
+        $this->session->set('oauth_bind_provider', $openUser['provider']);
+    }
+
+    public function getBindOpenUser(): array
+    {
+        $openUser = $this->session->get('oauth_bind_open_user');
+        $provider = (int)$this->session->get('oauth_bind_provider');
+
+        if (empty($openUser) || empty($provider) || (int)$openUser['provider'] !== $provider) {
+            throw new BadRequestException('account.bind_session_expired');
+        }
+
+        return $openUser;
+    }
+
+    public function clearBindSession()
+    {
+        $this->session->remove('oauth_bind_open_user');
+        $this->session->remove('oauth_bind_provider');
     }
 
     public function getConnectAuth($provider)
@@ -193,18 +231,20 @@ class Connect extends Service
 
     protected function handleConnectRelation(UserModel $user, array $openUser)
     {
+        $openUser = OAuthRegisterService::normalizeOpenUser($openUser);
+
         $connectRepo = new ConnectRepo();
 
         $connect = $connectRepo->findByOpenId($openUser['id'], $openUser['provider']);
 
         if ($connect) {
 
+            if ($connect->user_id != $user->id) {
+                throw new BadRequestException('account.oauth_already_bound');
+            }
+
             $connect->open_name = $openUser['name'];
             $connect->open_avatar = $openUser['avatar'];
-
-            if ($connect->user_id != $user->id) {
-                $connect->user_id = $user->id;
-            }
 
             if (empty($connect->union_id) && !empty($openUser['unionid'])) {
                 $connect->union_id = $openUser['unionid'];

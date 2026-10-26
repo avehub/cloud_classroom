@@ -165,4 +165,18 @@ class Controller extends \Phalcon\Mvc\Controller
         return $appService->getSettings($section);
     }
 
+    protected function appendQuery($url, array $params)
+    {
+        $fragment = '';
+
+        if (strpos($url, '#') !== false) {
+            list($url, $fragment) = explode('#', $url, 2);
+            $fragment = '#' . $fragment;
+        }
+
+        $separator = strpos($url, '?') === false ? '?' : '&';
+
+        return $url . $separator . http_build_query($params) . $fragment;
+    }
+
 }

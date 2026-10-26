@@ -55,7 +55,6 @@
             </li>
         {% else %}
             <li class="layui-nav-item"><a href="{{ url({'for':'home.account.login'}) }}">登录</a></li>
-            <li class="layui-nav-item"><a href="{{ url({'for':'home.account.register'}) }}">注册</a></li>
         {% endif %}
     </ul>
 </div>

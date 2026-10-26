@@ -8,7 +8,6 @@ use App\Models\User as UserModel;
 use App\Repos\Connect as ConnectRepo;
 use App\Repos\User as UserRepo;
 use App\Services\Auth\Home as AuthService;
-use App\Services\Logic\Account\Register as RegisterService;
 use App\Services\Logic\Notice\External\AccountLogin as AccountLoginNotice;
 use App\Services\Logic\WeChat\OfficialAccount as WeChatOAService;
 use App\Validators\Account as AccountValidator;
@@ -76,42 +75,6 @@ class WeChatOfficialAccount extends Service
         $auth = $this->getAppAuth();
 
         $auth->saveAuthInfo($user);
-    }
-
-    public function bindRegister()
-    {
-        $post = $this->request->getPost();
-
-        $validator = new WeChatOAValidator();
-
-        $openId = $validator->checkLoginOpenId($post['ticket']);
-
-        $unionId = $this->getUnionId($openId);
-
-        $registerService = new RegisterService();
-
-        $account = $registerService->handle();
-
-        $userRepo = new UserRepo();
-
-        $user = $userRepo->findById($account->id);
-
-        $connect = new ConnectModel();
-
-        $connect->user_id = $user->id;
-        $connect->open_id = $openId;
-        $connect->union_id = $unionId;
-        $connect->provider = ConnectModel::PROVIDER_WECHAT_OA;
-
-        $connect->create();
-
-        $this->handleLoginNotice($user);
-
-        $auth = $this->getAppAuth();
-
-        $auth->saveAuthInfo($user);
-
-        $this->eventsManager->fire('Account:afterRegister', $this, $user);
     }
 
     protected function getUnionId($openId)

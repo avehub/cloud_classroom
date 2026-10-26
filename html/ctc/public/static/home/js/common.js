@@ -104,6 +104,24 @@ layui.use(['jquery', 'form', 'element', 'layer', 'helper'], function () {
         return false;
     });
 
+    var removeSetPasswordParam = function () {
+        if (window.history.replaceState) {
+            var url = new URL(window.location.href);
+            url.searchParams.delete('set_password');
+            window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+        }
+    };
+
+    if (window.user.id > 0 && new URLSearchParams(window.location.search).get('set_password') === '1') {
+        layer.open({
+            type: 2,
+            title: '设置登录密码',
+            area: ['560px', '620px'],
+            content: ['/account/password/setup', 'no'],
+            end: removeSetPasswordParam,
+        });
+    }
+
     $('.kg-back').on('click', function () {
         window.history.back();
     });

@@ -107,20 +107,4 @@ class WechatOfficialAccountController extends Controller
         return $this->jsonSuccess(['location' => $location]);
     }
 
-    /**
-     * @Post("/bind/register", name="home.wechat_oa.bind_register")
-     */
-    public function bindRegisterAction()
-    {
-        $service = new HomeWeChatOAService();
-
-        $service->bindRegister();
-
-        $returnUrl = $this->request->getPost('return_url', 'string');
-
-        $location = $returnUrl ?: $this->url->get(['for' => 'home.index']);
-
-        return $this->jsonSuccess(['location' => $location]);
-    }
-
 }

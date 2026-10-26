@@ -36,11 +36,6 @@ class FullH5Url extends AppService
         return $this->getFullUrl('/index/index');
     }
 
-    public function getAccountRegisterUrl()
-    {
-        return $this->getFullUrl('/account/register');
-    }
-
     public function getAccountLoginUrl()
     {
         return $this->getFullUrl('/account/login');

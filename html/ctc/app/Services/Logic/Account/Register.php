@@ -48,6 +48,8 @@ class Register extends LogicService
 
             $account = new AccountModel();
 
+            unset($account->id);
+
             $account->assign($data);
 
             $account->create();

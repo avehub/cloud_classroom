@@ -51,10 +51,14 @@
                             <div class="info">
                                 <span class="icon"><i class="layui-icon layui-icon-password"></i></span>
                                 <span class="title">登录密码</span>
-                                <span class="summary">经常更改密码有助于保护您的帐号安全</span>
+                                {% if account.has_password %}
+                                    <span class="summary">经常更改密码有助于保护您的帐号安全</span>
+                                {% else %}
+                                    <span class="summary">尚未设置登录密码，设置后可使用密码登录</span>
+                                {% endif %}
                             </div>
                             <div class="action">
-                                <a class="layui-btn layui-btn-sm btn-edit-pwd" href="{{ edit_pwd_url }}">修改</a>
+                                <a class="layui-btn layui-btn-sm btn-edit-pwd" href="{{ edit_pwd_url }}">{% if account.has_password %}修改{% else %}设置{% endif %}</a>
                             </div>
                         </div>
                         <div class="security-item">
@@ -137,6 +141,14 @@
 
     {% if oauth_provider.wechat.enabled == 1 and wechat_oa_connected == 0 %}
         {{ js_include('home/js/wechat.oa.subscribe.js') }}
+    {% endif %}
+
+    {% if request.getQuery('oauth_error') == 1 %}
+        <script>
+            layui.use(['layer'], function () {
+                layui.layer.msg('该微信帐号已绑定其他用户', {icon: 2});
+            });
+        </script>
     {% endif %}
 
 {% endblock %}

@@ -26,8 +26,6 @@
         </div>
         <div class="link">
             <a class="login-link" href="{{ url({'for':'home.account.login'}) }}">用户登录</a>
-            <span class="separator">·</span>
-            <a class="forget-link" href="{{ url({'for':'home.account.register'}) }}">用户注册</a>
         </div>
     </div>
 

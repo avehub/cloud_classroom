@@ -9,8 +9,10 @@ use App\Models\Connect as ConnectModel;
 use App\Services\Logic\Account\EmailUpdate as EmailUpdateService;
 use App\Services\Logic\Account\OAuthProvider as OAuthProviderService;
 use App\Services\Logic\Account\PasswordReset as PasswordResetService;
+use App\Services\Logic\Account\PasswordSetup as PasswordSetupService;
 use App\Services\Logic\Account\PasswordUpdate as PasswordUpdateService;
 use App\Services\Logic\Account\PhoneUpdate as PhoneUpdateService;
+use App\Services\Logic\User\Console\AccountInfo as AccountInfoService;
 use App\Services\Logic\Url\FullH5Url as FullH5UrlService;
 
 /**
@@ -24,27 +26,7 @@ class AccountController extends Controller
      */
     public function registerAction()
     {
-        $service = new FullH5UrlService();
-
-        if ($service->isMobileBrowser() && $service->h5Enabled()) {
-            $location = $service->getAccountRegisterUrl();
-            return $this->response->redirect($location);
-        }
-
-        if ($this->authUser->id > 0) {
-            return $this->response->redirect(['for' => 'home.index']);
-        }
-
-        $returnUrl = $this->request->getHTTPReferer();
-
-        $service = new OAuthProviderService();
-
-        $oauthProvider = $service->handle();
-
-        $this->seo->prependTitle('用户注册');
-
-        $this->view->setVar('return_url', $returnUrl);
-        $this->view->setVar('local_oauth', $oauthProvider['local']);
+        return $this->response->redirect(['for' => 'home.account.login']);
     }
 
     /**
@@ -113,34 +95,13 @@ class AccountController extends Controller
     }
 
     /**
-     * @Post("/register", name="home.account.do_register")
-     */
-    public function doRegisterAction()
-    {
-        $service = new AccountService();
-
-        $service->register();
-
-        $returnUrl = $this->request->getPost('return_url', 'string');
-
-        $location = $returnUrl ?: $this->url->get(['for' => 'home.index']);
-
-        $content = [
-            'location' => $location,
-            'msg' => '注册账号成功',
-        ];
-
-        return $this->jsonSuccess($content);
-    }
-
-    /**
      * @Post("/password/login", name="home.account.pwd_login")
      */
     public function loginByPasswordAction()
     {
         $service = new AccountService();
 
-        $service->loginByPassword();
+        $result = $service->loginByPassword();
 
         $returnUrl = $this->request->getPost('return_url', 'string');
 
@@ -149,6 +110,9 @@ class AccountController extends Controller
         $content = [
             'location' => $location,
             'msg' => '登录账号成功',
+            'is_new_user' => $result['is_new_user'],
+            'need_set_password' => $result['status']['need_set_password'],
+            'need_bind_phone' => $result['status']['need_bind_phone'],
         ];
 
         return $this->jsonSuccess($content);
@@ -161,15 +125,59 @@ class AccountController extends Controller
     {
         $service = new AccountService();
 
-        $service->loginByVerify();
+        $result = $service->loginByVerify();
 
         $returnUrl = $this->request->getPost('return_url', 'string');
 
         $location = $returnUrl ?: $this->url->get(['for' => 'home.index']);
 
+        if ($result['status']['need_set_password']) {
+            $location = $this->appendQuery($location, ['set_password' => 1]);
+        }
+
         $content = [
             'location' => $location,
-            'msg' => '登录账号成功',
+            'msg' => $result['is_new_user'] ? '登录成功，账号已自动创建' : '登录账号成功',
+            'is_new_user' => $result['is_new_user'],
+            'need_set_password' => $result['status']['need_set_password'],
+            'need_bind_phone' => $result['status']['need_bind_phone'],
+        ];
+
+        return $this->jsonSuccess($content);
+    }
+
+    /**
+     * @Get("/password/setup", name="home.account.password_setup")
+     */
+    public function passwordSetupAction()
+    {
+        if ($this->authUser->id == 0) {
+            return $this->response->redirect(['for' => 'home.account.login']);
+        }
+
+        $service = new AccountInfoService();
+
+        $account = $service->handle();
+
+        $this->view->pick('account/password_setup_layer');
+        $this->view->setVar('account', $account);
+    }
+
+    /**
+     * @Post("/password/setup", name="home.account.do_password_setup")
+     */
+    public function doPasswordSetupAction()
+    {
+        $service = new PasswordSetupService();
+
+        $service->handle();
+
+        $location = $this->url->get(['for' => 'home.uc.account'], ['type' => 'password']);
+
+        $content = [
+            'location' => $location,
+            'target' => 'parent',
+            'msg' => '设置登录密码成功',
         ];
 
         return $this->jsonSuccess($content);

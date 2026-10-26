@@ -3,15 +3,18 @@
 
 namespace App\Http\Api\Services;
 
+use App\Exceptions\BadRequest as BadRequestException;
 use App\Models\Connect as ConnectModel;
-use App\Models\User as UserModel;
 use App\Repos\Connect as ConnectRepo;
 use App\Repos\User as UserRepo;
 use App\Services\Auth\Api as ApiAuthService;
+use App\Services\Logic\Account\OAuthRegister as OAuthRegisterService;
+use App\Services\Logic\Account\Status as StatusService;
 use App\Services\Logic\Notice\External\AccountLogin as AccountLoginNoticeService;
 use App\Services\OAuth\QQ as QQAuth;
 use App\Services\OAuth\WeChat as WeChatAuth;
 use App\Services\OAuth\WeiBo as WeiBoAuth;
+use App\Validators\Account as AccountValidator;
 use Exception;
 
 class Connect extends Service
@@ -48,28 +51,66 @@ class Connect extends Service
         $openUser = $this->getOpenUserInfo($code, $state, $provider);
         $relation = $this->getConnectRelation($openUser['id'], $provider);
 
-        $token = null;
+        $auth = new ApiAuthService();
 
         if ($relation) {
-
-            $relation->update_time = time();
-
-            $relation->update();
 
             $userRepo = new UserRepo();
 
             $user = $userRepo->findById($relation->user_id);
 
-            $auth = new ApiAuthService();
+            if (!$user || $user->deleted == 1) {
+                throw new BadRequestException('user.not_found');
+            }
+
+            $validator = new AccountValidator();
+
+            $validator->checkIfAllowLogin($user);
+
+            if ($relation->deleted == 1) {
+                $relation->deleted = 0;
+            }
+
+            $relation->update_time = time();
+
+            $relation->update();
 
             $token = $auth->saveAuthInfo($user);
 
-            $this->handleLoginNotice($user);
+            $this->eventsManager->fire('Account:afterLogin', $this, $user);
+
+            $isNewUser = false;
+
+        } else {
+
+            $registerService = new OAuthRegisterService();
+
+            list($user, $isNewUser) = $registerService->handle($openUser);
+
+            $validator = new AccountValidator();
+
+            $validator->checkIfAllowLogin($user);
+
+            $token = $auth->saveAuthInfo($user);
+
+            if ($isNewUser) {
+                $this->eventsManager->fire('Account:afterRegister', $this, $user);
+                $this->handleLoginNotice($user);
+            } else {
+                $this->eventsManager->fire('Account:afterLogin', $this, $user);
+            }
         }
+
+        $statusService = new StatusService();
+
+        $status = $statusService->handle($user);
 
         return [
             'openid' => $openUser['id'],
             'token' => $token,
+            'is_new_user' => (int)$isNewUser,
+            'need_set_password' => (int)$status['need_set_password'],
+            'need_bind_phone' => (int)$status['need_bind_phone'],
         ];
     }
 
@@ -165,42 +206,7 @@ class Connect extends Service
         );
     }
 
-    protected function handleConnectRelation(UserModel $user, array $openUser)
-    {
-        $connectRepo = new ConnectRepo();
-
-        $connect = $connectRepo->findByOpenId($openUser['id'], $openUser['provider']);
-
-        if ($connect) {
-
-            $connect->open_name = $openUser['name'];
-            $connect->open_avatar = $openUser['avatar'];
-
-            if ($connect->user_id != $user->id) {
-                $connect->user_id = $user->id;
-            }
-
-            if ($connect->deleted == 1) {
-                $connect->deleted = 0;
-            }
-
-            $connect->update();
-
-        } else {
-
-            $connect = new ConnectModel();
-
-            $connect->user_id = $user->id;
-            $connect->open_id = $openUser['id'];
-            $connect->open_name = $openUser['name'];
-            $connect->open_avatar = $openUser['avatar'];
-            $connect->provider = $openUser['provider'];
-
-            $connect->create();
-        }
-    }
-
-    protected function handleLoginNotice(UserModel $user)
+    protected function handleLoginNotice($user)
     {
         $service = new AccountLoginNoticeService();
 

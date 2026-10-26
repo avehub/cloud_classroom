@@ -22,10 +22,6 @@
     <div class="layui-form-item">
         <div class="layui-input-block">
             <button id="submit-btn" class="layui-btn layui-btn-fluid" lay-submit="true" lay-filter="go">登录并绑定已有帐号</button>
-            <input type="hidden" name="provider" value="{{ provider }}">
-            <input type="hidden" name="code" value="{{ request.get('code') }}">
-            <input type="hidden" name="state" value="{{ request.get('state') }}">
-            <input type="hidden" name="open_user" value='{{ open_user|json_encode }}'>
         </div>
     </div>
 </form>
