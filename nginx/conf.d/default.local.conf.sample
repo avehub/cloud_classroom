@@ -1,0 +1,42 @@
+# 本地/开发环境站点配置模板（复制为 default.conf 使用）
+#   http://gdk.cn            -> 直接提供站点（配合 SITE_URL=http://gdk.cn）
+#   http://k.gaodekuai.cn    -> 301 跳转 HTTPS
+#   https://k.gaodekuai.cn   -> 提供站点
+# 生产环境请使用 default.secure.conf.sample。
+
+server {
+    listen 80;
+    server_name gdk.cn localhost 127.0.0.1 ctc.docker;
+
+    set $ctc_https off;
+
+    include /etc/nginx/conf.d/app.locations.inc;
+}
+
+server {
+    listen 80;
+    server_name k.gaodekuai.cn;
+
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name k.gaodekuai.cn;
+
+    set $ctc_https on;
+
+    ssl_certificate     /etc/nginx/ssl/k.gaodekuai.cn.crt;
+    ssl_certificate_key /etc/nginx/ssl/k.gaodekuai.cn.key;
+
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305;
+    ssl_prefer_server_ciphers off;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 1d;
+    ssl_session_tickets off;
+
+    add_header Strict-Transport-Security "max-age=31536000" always;
+
+    include /etc/nginx/conf.d/app.locations.inc;
+}
