@@ -152,14 +152,21 @@ class MyStorage extends Storage
 
             foreach ($files as $file) {
 
-                if (!$this->checkFile($file->getRealType(), $mimeType)) {
-                    $message = sprintf('MimeType: "%s" not in secure whitelist', $file->getRealType());
+                $realType = $file->getRealType();
+
+                if ($uploadType == UploadModel::TYPE_AVATAR_IMG && strtolower($realType) === 'image/svg+xml') {
+                    $this->logger->warning('Avatar SVG upload rejected');
+                    return false;
+                }
+
+                if (!$this->checkFile($realType, $mimeType)) {
+                    $message = sprintf('MimeType: "%s" not in secure whitelist', $realType);
                     throw new InvalidArgumentException($message);
                 }
 
                 $tempName = $file->getTempName();
 
-                $mime = $file->getRealType();
+                $mime = $realType;
 
                 $extension = $this->getFileExtension($file->getName());
 

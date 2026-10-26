@@ -4,6 +4,7 @@
 namespace App\Http\Admin\Controllers;
 
 use App\Http\Admin\Services\Index as IndexService;
+use App\Models\Role as RoleModel;
 use Phalcon\Mvc\View;
 
 /**
@@ -71,6 +72,10 @@ class IndexController extends Controller
      */
     public function phpinfoAction()
     {
+        if ($this->authUser->admin_role != RoleModel::ROLE_ROOT) {
+            $this->forbidden();
+        }
+
         echo phpinfo();
 
         exit;

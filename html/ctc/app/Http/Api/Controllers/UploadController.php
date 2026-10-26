@@ -17,6 +17,12 @@ class UploadController extends Controller
      */
     public function uploadAvatarImageAction()
     {
+        $user = $this->getAuthUser();
+
+        if (!$user || $user->id <= 0) {
+            $this->unauthorized();
+        }
+
         $service = new StorageService();
 
         $file = $service->uploadAvatarImage();

@@ -11,13 +11,30 @@ use App\Services\Logic\Notice\External\Mail\Test as MailTestService;
 use App\Services\Logic\Notice\External\Sms\Test as SmsTestService;
 use App\Services\MyStorage as StorageService;
 use App\Services\Vod as VodService;
+use App\Models\Role as RoleModel;
 use App\Services\WeChat as WeChatService;
+use Phalcon\Mvc\Dispatcher;
 
 /**
  * @RoutePrefix("/admin/test")
  */
 class TestController extends Controller
 {
+
+    public function beforeExecuteRoute(Dispatcher $dispatcher)
+    {
+        $result = parent::beforeExecuteRoute($dispatcher);
+
+        if ($result === false) {
+            return false;
+        }
+
+        if ($this->authUser->admin_role != RoleModel::ROLE_ROOT) {
+            $this->forbidden();
+        }
+
+        return true;
+    }
 
     /**
      * @Post("/storage", name="admin.test.storage")
