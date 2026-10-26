@@ -229,8 +229,12 @@ class User extends Model
     {
         if (empty($this->avatar)) {
             $this->avatar = kg_default_user_avatar_path();
-        } elseif (Text::startsWith($this->avatar, 'http')) {
+        } elseif (Text::startsWith($this->avatar, 'http') && !self::isWeChatAvatarUrl($this->avatar)) {
             $this->avatar = self::getAvatarPath($this->avatar);
+        }
+
+        if (self::isWeChatAvatarUrl($this->avatar)) {
+            $this->avatar = self::normalizeWeChatAvatarUrl($this->avatar);
         }
     }
 
@@ -277,6 +281,26 @@ class User extends Model
         }
 
         return $path;
+    }
+
+    public static function isWeChatAvatarUrl($url)
+    {
+        if (!Text::startsWith($url, 'http')) {
+            return false;
+        }
+
+        $host = strtolower((string)parse_url($url, PHP_URL_HOST));
+
+        return in_array($host, ['thirdwx.qlogo.cn', 'wx.qlogo.cn', 'mmbiz.qpic.cn'], true);
+    }
+
+    public static function normalizeWeChatAvatarUrl($url)
+    {
+        if (!self::isWeChatAvatarUrl($url)) {
+            return $url;
+        }
+
+        return preg_replace('/^http:\/\//i', 'https://', $url);
     }
 
     public static function genderTypes()

@@ -10,6 +10,7 @@ use App\Repos\User as UserRepo;
 use App\Services\Auth\Api as ApiAuthService;
 use App\Services\Logic\Account\OAuthRegister as OAuthRegisterService;
 use App\Services\Logic\Account\Status as StatusService;
+use App\Services\Logic\Account\WeChatAvatar as WeChatAvatarService;
 use App\Services\Logic\Notice\External\AccountLogin as AccountLoginNoticeService;
 use App\Services\OAuth\QQ as QQAuth;
 use App\Services\OAuth\WeChat as WeChatAuth;
@@ -49,6 +50,7 @@ class Connect extends Service
         $state = $this->request->getQuery('state');
 
         $openUser = $this->getOpenUserInfo($code, $state, $provider);
+        $openUser = OAuthRegisterService::normalizeOpenUser($openUser);
         $relation = $this->getConnectRelation($openUser['id'], $provider);
 
         $auth = new ApiAuthService();
@@ -71,9 +73,20 @@ class Connect extends Service
                 $relation->deleted = 0;
             }
 
+            $relation->open_name = $openUser['name'];
+            $relation->open_avatar = $openUser['avatar'];
+
+            if (empty($relation->union_id) && !empty($openUser['unionid'])) {
+                $relation->union_id = $openUser['unionid'];
+            }
+
             $relation->update_time = time();
 
             $relation->update();
+
+            $avatarService = new WeChatAvatarService();
+
+            $avatarService->sync($user, $relation->provider, $openUser['avatar']);
 
             $token = $auth->saveAuthInfo($user);
 

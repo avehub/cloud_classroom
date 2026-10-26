@@ -8,6 +8,7 @@ use App\Models\User as UserModel;
 use App\Repos\Connect as ConnectRepo;
 use App\Repos\User as UserRepo;
 use App\Services\Auth\Home as AuthService;
+use App\Services\Logic\Account\WeChatAvatar as WeChatAvatarService;
 use App\Services\Logic\Notice\External\AccountLogin as AccountLoginNotice;
 use App\Services\Logic\WeChat\OfficialAccount as WeChatOAService;
 use App\Validators\Account as AccountValidator;
@@ -39,6 +40,10 @@ class WeChatOfficialAccount extends Service
         $connect->update_time = time();
 
         $connect->update();
+
+        $avatarService = new WeChatAvatarService();
+
+        $avatarService->sync($user, $connect->provider, $connect->open_avatar);
 
         $this->handleLoginNotice($user);
 

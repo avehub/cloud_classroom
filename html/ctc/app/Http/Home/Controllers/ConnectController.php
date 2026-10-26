@@ -147,7 +147,7 @@ class ConnectController extends Controller
 
         if ($this->authUser->id == 0 && $connect) {
 
-            $user = $service->authConnectLogin($connect);
+            $user = $service->authConnectLogin($connect, $openUser);
 
             $location = $this->url->get(['for' => 'home.index']);
 

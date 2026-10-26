@@ -10,6 +10,7 @@ use App\Repos\Connect as ConnectRepo;
 use App\Repos\User as UserRepo;
 use App\Services\Auth\Home as AuthService;
 use App\Services\Logic\Account\OAuthRegister as OAuthRegisterService;
+use App\Services\Logic\Account\WeChatAvatar as WeChatAvatarService;
 use App\Services\Logic\Notice\External\AccountLogin as AccountLoginNotice;
 use App\Services\OAuth\QQ as QQAuth;
 use App\Services\OAuth\WeiBo as WeiBoAuth;
@@ -53,7 +54,7 @@ class Connect extends Service
         return $user;
     }
 
-    public function authConnectLogin(ConnectModel $connect)
+    public function authConnectLogin(ConnectModel $connect, array $openUser = [])
     {
         $userRepo = new UserRepo();
 
@@ -71,9 +72,24 @@ class Connect extends Service
             $connect->deleted = 0;
         }
 
+        if (!empty($openUser)) {
+            $openUser = OAuthRegisterService::normalizeOpenUser($openUser);
+
+            $connect->open_name = $openUser['name'];
+            $connect->open_avatar = $openUser['avatar'];
+
+            if (empty($connect->union_id) && !empty($openUser['unionid'])) {
+                $connect->union_id = $openUser['unionid'];
+            }
+        }
+
         $connect->update_time = time();
 
         $connect->update();
+
+        $avatarService = new WeChatAvatarService();
+
+        $avatarService->sync($user, $connect->provider, $connect->open_avatar);
 
         $this->handleLoginNotice($user);
 
@@ -269,6 +285,10 @@ class Connect extends Service
 
             $connect->create();
         }
+
+        $avatarService = new WeChatAvatarService();
+
+        $avatarService->sync($user, $openUser['provider'], $openUser['avatar']);
     }
 
     protected function handleLoginNotice(UserModel $user)

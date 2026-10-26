@@ -38,7 +38,9 @@ class OAuthRegister extends LogicService
             $connect = $connectRepo->findByOpenId($openId, $provider);
 
             if ($connect) {
-                return [$this->handleExistingConnect($connect, $openUser), false];
+                $user = $this->handleExistingConnect($connect, $openUser);
+                $this->syncWeChatAvatar($user, $provider, $openUser['avatar']);
+                return [$user, false];
             }
 
             throw new \RuntimeException('sys.service_unavailable');
@@ -57,6 +59,8 @@ class OAuthRegister extends LogicService
                 $user = $this->handleExistingConnect($connect, $openUser);
 
                 $this->db->commit();
+
+                $this->syncWeChatAvatar($user, $provider, $openUser['avatar']);
 
                 return [$user, false];
             }
@@ -90,6 +94,8 @@ class OAuthRegister extends LogicService
             $connect->create();
 
             $this->db->commit();
+
+            $this->syncWeChatAvatar($user, $provider, $openUser['avatar']);
 
             return [$user, true];
 
@@ -148,6 +154,13 @@ class OAuthRegister extends LogicService
         return $user;
     }
 
+    protected function syncWeChatAvatar(UserModel $user, $provider, $avatarUrl)
+    {
+        $service = new WeChatAvatar();
+
+        $service->sync($user, $provider, $avatarUrl);
+    }
+
     public static function normalizeOpenUser(array $openUser): array
     {
         $openId = (string)($openUser['id'] ?? '');
@@ -160,6 +173,10 @@ class OAuthRegister extends LogicService
         $unionId = (string)($openUser['unionid'] ?? '');
         $name = (string)($openUser['name'] ?? '');
         $avatar = (string)($openUser['avatar'] ?? '');
+
+        if (UserModel::isWeChatAvatarUrl($avatar)) {
+            $avatar = UserModel::normalizeWeChatAvatarUrl($avatar);
+        }
 
         if (mb_strlen($avatar, 'UTF-8') > 255) {
             $avatar = '';

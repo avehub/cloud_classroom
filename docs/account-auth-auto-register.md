@@ -91,6 +91,13 @@ openid=xxx&token=xxx&is_new_user=1&need_set_password=1&need_bind_phone=1
 
 原有字段保留，用于兼容旧版 H5。
 
+## 微信头像同步
+
+- 微信扫码、微信公众号登录时，会把微信头像同步到 `kg_user.avatar`。
+- 微信头像 URL 会统一转为 HTTPS，避免 HTTPS 页面出现混合内容。
+- 只同步默认头像或已有的微信头像；用户主动上传或后台设置的自定义头像会保留，不会被微信登录覆盖。
+- `kg_user.avatar` 已扩展到 255 字符，用于保存较长的微信外链地址。
+
 ## 旧版注册接口
 
 `POST /api/account/register` 继续保留原有行为，仅用于兼容旧版 H5。新版 H5 应下线注册按钮和注册页，统一使用验证码登录自动注册。
