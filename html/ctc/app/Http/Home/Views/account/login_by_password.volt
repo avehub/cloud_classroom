@@ -2,7 +2,7 @@
     <div class="layui-form-item">
         <div class="layui-input-wrap">
             <div class="layui-input-prefix"><i class="layui-icon layui-icon-username"></i></div>
-            <input id="cl-account" class="layui-input" type="text" name="account" autocomplete="off" placeholder="手机 / 邮箱" lay-verify="required">
+            <input id="cl-account" class="layui-input" type="text" name="account" autocomplete="off" placeholder="手机号" lay-verify="required">
         </div>
     </div>
     <div class="layui-form-item">

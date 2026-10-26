@@ -19,7 +19,7 @@
         <input id="cv-phone-captcha-ticket" type="hidden" name="captcha[ticket]">
         <input id="cv-phone-captcha-rand" type="hidden" name="captcha[rand]">
     {% else %}
-        <div class="tips">设置密码后即可使用手机号或邮箱进行密码登录。</div>
+        <div class="tips">设置密码后即可使用手机号进行密码登录。</div>
     {% endif %}
     <div class="layui-form-item">
         <label class="layui-form-label">新设密码</label>

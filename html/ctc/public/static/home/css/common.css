@@ -1843,16 +1843,58 @@
     margin: 0 10px;
 }
 
-.login-wrap .auto-register-tips,
-.login-wrap .agreement-tips {
-    margin-top: -10px;
-    margin-bottom: 20px;
+.login-tab .auto-register-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 400px;
+    margin: -4px auto 18px;
+    padding: 9px 12px;
+    border: 1px solid #e9f2ff;
+    border-radius: 6px;
+    background: #f6faff;
     font-size: 12px;
-    color: #999;
+    line-height: 18px;
+    color: #74849b;
+}
+
+.login-tab .auto-register-note .layui-icon {
+    color: #1e9fff;
+    font-size: 14px;
+    margin-top: 2px;
+}
+
+.login-tab .switch-link .separator {
+    margin: 0 8px;
+    color: #c4cad3;
+}
+
+.login-tab .switch-link .forget-link {
+    color: #8a94a6;
+}
+
+.login-tab .switch-link .forget-link:hover {
+    color: #1e9fff;
+}
+
+.login-wrap .agreement-tips {
+    max-width: 400px;
+    margin: 0 auto 22px;
+    padding-top: 14px;
+    border-top: 1px solid #eef1f5;
+    font-size: 12px;
+    line-height: 20px;
+    color: #9aa3af;
     text-align: center;
 }
 
 .login-wrap .agreement-tips a {
+    color: #6b7a90;
+}
+
+.login-wrap .agreement-tips a:hover {
     color: #1e9fff;
 }
 

@@ -33,24 +33,28 @@
                 {% endif %}
                 <div class="layui-tabs-item{% if oauth_provider.weixin.enabled != 1 %} layui-show{% endif %}">
                     <div id="verify-login-panel">
+                        <div class="auto-register-note">
+                            <i class="layui-icon layui-icon-tips"></i>
+                            <span>未注册手机号，验证后将自动创建账号</span>
+                        </div>
                         {{ partial('account/login_by_verify') }}
                         <div class="switch-link">
                             <a id="goto-pwd-login" href="javascript:;">密码登录</a>
+                            <span class="separator">·</span>
+                            <a class="forget-link" href="{{ url({'for':'home.account.forget'}) }}">忘记密码</a>
                         </div>
                     </div>
                     <div id="pwd-login-panel" style="display:none;">
                         {{ partial('account/login_by_password') }}
                         <div class="switch-link">
                             <a id="goto-verify-login" href="javascript:;">验证码登录</a>
+                            <span class="separator">·</span>
+                            <a class="forget-link" href="{{ url({'for':'home.account.forget'}) }}">忘记密码</a>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="link">
-            <a class="forget-link" href="{{ url({'for':'home.account.forget'}) }}">忘记密码</a>
-        </div>
-        <div class="auto-register-tips">未注册手机号 / 邮箱，验证后将自动创建账号</div>
         <div class="agreement-tips">登录即表示同意<a href="{{ terms_url }}" target="_blank">《用户协议》</a>和<a href="{{ privacy_url }}" target="_blank">《隐私政策》</a></div>
         {% if oauth_provider.qq.enabled == 1 or oauth_provider.weibo.enabled == 1 %}
             <div class="oauth">

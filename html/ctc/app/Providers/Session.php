@@ -19,7 +19,24 @@ class Session extends Provider
          */
         $config = $this->di->getShared('config');
 
-        $this->di->setShared($this->serviceName, function () use ($config) {
+        $di = $this->di;
+
+        $this->di->setShared($this->serviceName, function () use ($config, $di) {
+
+            /**
+             * 同时支持 HTTP (gdk.cn) 与 HTTPS (k.gaodekuai.cn) 访问。
+             * Secure Cookie 在 HTTP 下不会被浏览器回传，需按当前请求协议动态设置。
+             */
+            $secure = '0';
+
+            if ($di->has('request')) {
+                $request = $di->getShared('request');
+                $secure = $request->isSecure() ? '1' : '0';
+            }
+
+            ini_set('session.cookie_secure', $secure);
+            ini_set('session.cookie_httponly', '1');
+            ini_set('session.cookie_samesite', 'Lax');
 
             $session = new SessionManager();
 
