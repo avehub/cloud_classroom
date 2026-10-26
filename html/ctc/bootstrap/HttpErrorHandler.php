@@ -91,7 +91,7 @@ class HttpErrorHandler extends ErrorHandler
      */
     protected function apiError($e)
     {
-        $content = $this->translate($e->getMessage());
+        $content = $this->getErrorContent($e);
 
         $this->response->setJsonContent($content);
 
@@ -103,7 +103,7 @@ class HttpErrorHandler extends ErrorHandler
      */
     protected function ajaxError($e)
     {
-        $content = $this->translate($e->getMessage());
+        $content = $this->getErrorContent($e);
 
         $this->response->setJsonContent($content);
 
@@ -115,7 +115,7 @@ class HttpErrorHandler extends ErrorHandler
      */
     protected function pageError($e)
     {
-        $content = $this->translate($e->getMessage());
+        $content = $this->getErrorContent($e);
 
         $this->flashSession->error($content['msg']);
 
@@ -126,9 +126,18 @@ class HttpErrorHandler extends ErrorHandler
         $this->response->redirect(['for' => $for])->send();
     }
 
-    protected function translate($code)
+    protected function getErrorContent($e)
     {
+        $code = $e->getMessage();
+
         $errors = require config_path('errors.php');
+
+        if ($this->response->getStatusCode() >= 500 && !isset($errors[$code])) {
+            return [
+                'code' => 'sys.server_error',
+                'msg' => $errors['sys.server_error'],
+            ];
+        }
 
         return [
             'code' => $code,
