@@ -11,7 +11,7 @@ $config['env'] = getenv('APP_ENV') ?: 'pro';
 /**
  * 密钥
  */
-$config['key'] = getenv('APP_KEY') ?: 'mlq7jQ1Py8kTdW9m';
+$config['key'] = getenv('APP_KEY') ?: '';
 
 /**
  * 所在时区
@@ -74,7 +74,7 @@ $config['db']['username'] = getenv('MYSQL_USER') ?: 'ctc';
 /**
  * 数据库密码
  */
-$config['db']['password'] = getenv('MYSQL_PASSWORD') ?: '1qaz2wsx3edc';
+$config['db']['password'] = getenv('MYSQL_PASSWORD') ?: '';
 
 /**
  * 数据库编码
@@ -99,7 +99,7 @@ $config['redis']['index'] = (int)(getenv('REDIS_INDEX') ?: 0);
 /**
  * redis密码
  */
-$config['redis']['auth'] = getenv('REDIS_PASSWORD') ?: '1qaz2wsx3edc';
+$config['redis']['auth'] = getenv('REDIS_PASSWORD') ?: '';
 
 /**
  * 缓存有效期（秒）
