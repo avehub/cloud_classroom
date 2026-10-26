@@ -4,7 +4,7 @@
 
     {% set audit.req_data = audit.req_data ? audit.req_data : '{}' %}
 
-    <pre class="layui-code" id="kg-code">{{ audit.req_data }}</pre>
+    <pre class="layui-code" id="kg-code">{{ audit.req_data|e }}</pre>
 
 {% endblock %}
 
@@ -16,10 +16,15 @@
 
             var $ = layui.jquery;
             var $code = $('#kg-code');
-            var obj = JSON.parse($code.html());
-            var str = JSON.stringify(obj, undefined, 2);
 
-            $code.html(str);
+            try {
+                var obj = JSON.parse($code.text());
+                var str = JSON.stringify(obj, undefined, 2);
+
+                $code.text(str);
+            } catch (e) {
+                // Keep the original text when the stored payload is not valid JSON.
+            }
         });
 
     </script>

@@ -37,13 +37,13 @@
                     <div class="layui-form-item">
                         <label class="layui-form-label">头衔</label>
                         <div class="layui-input-block">
-                            <input class="layui-input" type="text" name="title" value="{{ user.title }}">
+                            <input class="layui-input" type="text" name="title" value="{{ user.title|e }}">
                         </div>
                     </div>
                     <div class="layui-form-item">
                         <label class="layui-form-label">简介</label>
                         <div class="layui-input-block">
-                            <textarea class="layui-textarea" name="about">{{ user.about }}</textarea>
+                            <textarea class="layui-textarea" name="about">{{ user.about|e }}</textarea>
                         </div>
                     </div>
                     <div class="layui-form-item">

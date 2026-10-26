@@ -60,7 +60,7 @@
                     <div class="layui-form-item">
                         <label class="layui-form-label">简介</label>
                         <div class="layui-input-block">
-                            <textarea class="layui-textarea" name="about" lay-verify="required">{{ user.about }}</textarea>
+                            <textarea class="layui-textarea" name="about" lay-verify="required">{{ user.about|e }}</textarea>
                         </div>
                     </div>
                     <div class="layui-form-item">

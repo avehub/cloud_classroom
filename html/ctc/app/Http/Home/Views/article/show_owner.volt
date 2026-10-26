@@ -9,7 +9,7 @@
                 </div>
                 <div class="info">
                     <div class="name layui-elip">
-                        <a href="{{ owner_url }}" title="{{ article.owner.about }}">{{ article.owner.name }}</a>
+                        <a href="{{ owner_url }}" title="{{ article.owner.about|e }}">{{ article.owner.name }}</a>
                     </div>
                     <div class="title layui-elip">{{ article.owner.title|default('初出江湖') }}</div>
                 </div>

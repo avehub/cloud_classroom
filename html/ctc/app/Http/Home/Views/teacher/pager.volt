@@ -6,12 +6,12 @@
                 <div class="layui-col-md3">
                     <div class="user-card">
                         <div class="avatar">
-                            <a href="{{ user_url }}" title="{{ item.about }}" target="_blank">
+                            <a href="{{ user_url }}" title="{{ item.about|e }}" target="_blank">
                                 <img src="{{ item.avatar }}" alt="{{ item.name }}">
                             </a>
                         </div>
                         <div class="name layui-elip">
-                            <a href="{{ user_url }}" title="{{ item.about }}" target="_blank">{{ item.name }}</a>
+                            <a href="{{ user_url }}" title="{{ item.about|e }}" target="_blank">{{ item.name }}</a>
                         </div>
                         <div class="title layui-elip">{{ item.title|default('小小教书匠') }}</div>
                     </div>

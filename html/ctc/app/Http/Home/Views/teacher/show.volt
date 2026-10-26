@@ -40,7 +40,7 @@
                 <span title="{{ date('Y-m-d H:i:s',user.active_time) }}">{{ user.active_time|time_ago }}</span>
             </p>
         </div>
-        <div class="about">{{ user.about|default('这个家伙很懒，什么都没留下') }}</div>
+        <div class="about">{{ user.about|default('这个家伙很懒，什么都没留下')|e }}</div>
     </div>
 
     {% set courses_url = url({'for':'home.teacher.courses','id':user.id}) %}

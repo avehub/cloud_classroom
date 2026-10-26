@@ -9,7 +9,7 @@
                     </div>
                     <div class="info">
                         <div class="name layui-elip">
-                            <a href="{{ teacher_url }}" title="{{ course.teacher.about }}" target="_blank">{{ course.teacher.name }}</a>
+                            <a href="{{ teacher_url }}" title="{{ course.teacher.about|e }}" target="_blank">{{ course.teacher.name }}</a>
                         </div>
                         <div class="title layui-elip">{{ course.teacher.title|default('小小教书匠') }}</div>
                     </div>
