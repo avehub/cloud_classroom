@@ -19,7 +19,7 @@
     {% endif %}
     {{ css_link('lib/iconfont/iconfont.css') }}
     {{ css_link('lib/layui/css/layui.css') }}
-    {{ css_link('home/css/common.css', true, '2026102602') }}
+    {{ css_link('home/css/common.css', true, '2026102604') }}
     {% block link_css %}{% endblock %}
     {% block inline_css %}{% endblock %}
 </head>
@@ -36,7 +36,7 @@
 
 {{ partial('partials/js_vars') }}
 {{ js_include('lib/layui/layui.js') }}
-{{ js_include('home/js/common.js', true, '2026102602') }}
+{{ js_include('home/js/common.js', true, '2026102604') }}
 {{ js_include('home/js/fixbar.js') }}
 
 {% block include_js %}{% endblock %}

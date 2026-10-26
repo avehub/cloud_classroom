@@ -8,7 +8,7 @@
     <meta name="csrf-token" content="{{ csrfToken.getToken() }}">
     <title>Layer</title>
     {{ css_link('lib/layui/css/layui.css') }}
-    {{ css_link('home/css/common.css', true, '2026102602') }}
+    {{ css_link('home/css/common.css', true, '2026102604') }}
     {% block link_css %}{% endblock %}
     {% block inline_css %}{% endblock %}
 </head>
@@ -17,7 +17,7 @@
 
 {{ partial('partials/js_vars') }}
 {{ js_include('lib/layui/layui.js') }}
-{{ js_include('home/js/common.js', true, '2026102602') }}
+{{ js_include('home/js/common.js', true, '2026102604') }}
 
 {% block include_js %}{% endblock %}
 {% block inline_js %}{% endblock %}

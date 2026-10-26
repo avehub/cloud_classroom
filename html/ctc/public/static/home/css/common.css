@@ -384,7 +384,7 @@
 .index-carousel {
     box-sizing: border-box;
     width: 100%;
-    max-width: 1120px;
+    max-width: 1180px;
     height: auto;
     text-align: center;
 }
@@ -1899,26 +1899,181 @@
     color: #1e9fff;
 }
 
+.layui-layer.password-setup-dialog {
+    overflow: hidden;
+    border-radius: 12px;
+    border: 0;
+    box-shadow: 0 20px 60px rgba(25, 39, 58, .18);
+}
+
+.layui-layer.password-setup-dialog .layui-layer-title {
+    height: 46px;
+    padding: 0 20px;
+    border-bottom: 1px solid #f0f2f5;
+    background: #fff;
+    color: #445064;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 46px;
+}
+
+.layui-layer.password-setup-dialog .layui-layer-setwin {
+    top: 16px;
+    right: 16px;
+}
+
+.layui-layer.password-setup-dialog .layui-layer-content {
+    background: #fff;
+}
+
 .password-setup-layer {
-    padding: 25px 30px 5px;
+    padding: 24px 36px 28px;
 }
 
-.password-setup-layer .tips {
-    margin-bottom: 20px;
-    color: #666;
-    line-height: 24px;
+.setup-header {
+    margin-bottom: 22px;
+    text-align: center;
 }
 
-.password-setup-layer .tips-alert {
-    color: #ff5722;
+.setup-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 14px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #eaf4ff, #f7fbff);
+    color: #1e9fff;
+    font-size: 24px;
 }
 
-.password-setup-layer .layui-form-label {
-    width: 95px;
+.setup-header-success .setup-icon {
+    background: #edfbf5;
+    color: #16b777;
 }
 
-.password-setup-layer .layui-input-block {
-    margin-left: 125px;
+.setup-header h2 {
+    margin: 0 0 6px;
+    color: #2f3b4c;
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.setup-header p {
+    margin: 0;
+    color: #8b95a7;
+    font-size: 12px;
+    line-height: 20px;
+}
+
+.setup-notice {
+    display: flex;
+    gap: 9px;
+    margin-bottom: 18px;
+    padding: 12px 14px;
+    border: 1px solid #ffe7cc;
+    border-radius: 8px;
+    background: #fff9f2;
+    color: #8a6237;
+    font-size: 12px;
+    line-height: 19px;
+}
+
+.setup-notice .layui-icon {
+    flex: none;
+    margin-top: 2px;
+    color: #f39c12;
+    font-size: 16px;
+}
+
+.setup-notice strong {
+    display: block;
+    margin-bottom: 2px;
+    color: #7a4f1d;
+    font-weight: 600;
+}
+
+.setup-field {
+    margin-bottom: 16px;
+}
+
+.password-setup-form {
+    width: 100%;
+    max-width: 520px;
+}
+
+.setup-field label {
+    display: block;
+    margin-bottom: 7px;
+    color: #5d6878;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 20px;
+}
+
+.setup-field .layui-input-wrap {
+    width: 100%;
+}
+
+.setup-field .layui-input {
+    height: 40px;
+    border-color: #dde3ea;
+    border-radius: 7px;
+    background: #fbfcfe;
+    line-height: 40px;
+}
+
+.setup-field .layui-input:focus {
+    border-color: #1e9fff;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(30, 159, 255, .08);
+}
+
+.setup-code-row {
+    display: flex;
+    gap: 10px;
+}
+
+.setup-code-row .layui-input-wrap {
+    flex: 1;
+    min-width: 0;
+}
+
+.setup-code-row .layui-btn {
+    flex: none;
+    min-width: 112px;
+    height: 40px;
+    padding: 0 14px;
+    border-radius: 7px;
+    line-height: 40px;
+}
+
+.setup-actions {
+    margin-top: 24px;
+}
+
+.setup-actions .layui-btn {
+    height: 42px;
+    border-radius: 7px;
+    font-size: 14px;
+    line-height: 42px;
+}
+
+.setup-skip {
+    display: block;
+    margin: 13px auto 0;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: #9aa3af;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.setup-skip:hover {
+    color: #1e9fff;
 }
 
 .security-form .tips {

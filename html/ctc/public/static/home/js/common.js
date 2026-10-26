@@ -113,12 +113,38 @@ layui.use(['jquery', 'form', 'element', 'layer', 'helper'], function () {
     };
 
     if (window.user.id > 0 && new URLSearchParams(window.location.search).get('set_password') === '1') {
+        var isMobile = window.innerWidth <= 600;
+        var setupResizeHandler = null;
+
         layer.open({
             type: 2,
-            title: '设置登录密码',
-            area: ['560px', '620px'],
+            title: '账号安全',
+            skin: 'password-setup-dialog',
+            area: isMobile ? ['92%', '82vh'] : ['520px', '540px'],
+            offset: isMobile ? '4vh' : '8vh',
+            shadeClose: false,
             content: ['/account/password/setup', 'no'],
-            end: removeSetPasswordParam,
+            success: function (layero, index) {
+                var iframe = layero.find('iframe')[0];
+
+                setupResizeHandler = function (event) {
+                    if (!iframe || event.source !== iframe.contentWindow) return;
+                    if (!event.data || event.data.type !== 'ctc-password-setup-height') return;
+
+                    var maxHeight = Math.max(400, window.innerHeight - (isMobile ? 80 : 140));
+                    var height = Math.min(Math.max(parseInt(event.data.height, 10) + 48, 400), maxHeight);
+
+                    layer.style(index, {height: height + 'px'});
+                };
+
+                window.addEventListener('message', setupResizeHandler);
+            },
+            end: function () {
+                if (setupResizeHandler) {
+                    window.removeEventListener('message', setupResizeHandler);
+                }
+                removeSetPasswordParam();
+            },
         });
     }
 

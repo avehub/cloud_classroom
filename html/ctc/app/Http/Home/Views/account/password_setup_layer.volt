@@ -1,23 +1,28 @@
 {% extends 'templates/layer.volt' %}
 
+{% block inline_css %}
+    <style>
+        body.layer { padding: 0; }
+    </style>
+{% endblock %}
+
 {% block content %}
 
     <div class="password-setup-layer">
+        <div class="setup-header{% if account.has_password %} setup-header-success{% endif %}">
+            <div class="setup-icon">
+                <i class="layui-icon {% if account.has_password %}layui-icon-success{% else %}layui-icon-password{% endif %}"></i>
+            </div>
+            <h2>{% if account.has_password %}登录密码已设置{% else %}设置登录密码{% endif %}</h2>
+            <p>{% if account.has_password %}无需重复设置，可直接使用手机号和密码登录{% else %}设置后可使用手机号和密码登录，更安全便捷{% endif %}</p>
+        </div>
         {% if account.has_password %}
-            <div class="tips">登录密码已设置，无需重复设置。</div>
-            <div class="layui-form-item">
-                <div class="layui-input-block">
-                    <button id="setup-close-btn" class="layui-btn layui-btn-primary" type="button">关闭</button>
-                </div>
+            <div class="setup-actions">
+                <button id="setup-close-btn" class="layui-btn layui-btn-fluid" type="button">知道了</button>
             </div>
         {% else %}
             {{ partial('account/password_setup_form') }}
-            <div class="layui-form-item">
-                <label class="layui-form-label"></label>
-                <div class="layui-input-block">
-                    <button id="setup-later-btn" class="layui-btn layui-btn-primary" type="button">稍后设置</button>
-                </div>
-            </div>
+            <button id="setup-later-btn" class="setup-skip" type="button">暂时跳过，稍后设置</button>
         {% endif %}
     </div>
 
@@ -38,6 +43,12 @@
             var $ = layui.jquery;
             var index = parent.layer.getFrameIndex(window.name);
 
+            var notifyHeight = function () {
+                if (parent === window) return;
+                var height = Math.ceil(document.body.scrollHeight);
+                parent.postMessage({type: 'ctc-password-setup-height', height: height}, window.location.origin);
+            };
+
             var closeLayer = function () {
                 var url = new URL(parent.location.href);
                 url.searchParams.delete('set_password');
@@ -48,6 +59,11 @@
             };
 
             $('#setup-close-btn, #setup-later-btn').on('click', closeLayer);
+
+            window.addEventListener('load', notifyHeight);
+            window.addEventListener('resize', notifyHeight);
+            setTimeout(notifyHeight, 50);
+            setTimeout(notifyHeight, 300);
         });
     </script>
 
