@@ -31,7 +31,7 @@ class PlayTicket extends LogicService
     /**
      * 每分钟最多申请次数
      */
-    const RATE_LIMIT = 30;
+    const RATE_LIMIT = 60;
 
     /**
      * @param int $chapterId
@@ -64,7 +64,7 @@ class PlayTicket extends LogicService
             throw new ForbiddenException('sys.forbidden');
         }
 
-        $this->checkRateLimit($user->id);
+        $this->checkRateLimit($user->id, $chapter->id);
 
         $chapterVodService = new ChapterVodService();
 
@@ -190,19 +190,21 @@ class PlayTicket extends LogicService
 
     /**
      * @param int $userId
+     * @param int $chapterId
      * @throws BadRequestException
      */
-    protected function checkRateLimit($userId)
+    protected function checkRateLimit($userId, $chapterId)
     {
         $redis = $this->getRedis();
 
         if (!$redis) return;
 
-        $key = 'rate:play_ticket:' . intval($userId);
+        $key = 'rate:play_ticket:' . intval($userId) . ':' . intval($chapterId);
 
         $count = (int)$redis->incr($key);
 
-        if ($count === 1) {
+        // 防止 INCR 与 EXPIRE 之间进程中断导致 key 永久无 TTL
+        if ($count === 1 || $redis->ttl($key) < 0) {
             $redis->expire($key, 60);
         }
 

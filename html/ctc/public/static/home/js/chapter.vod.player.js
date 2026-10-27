@@ -18,6 +18,8 @@ layui.use(['jquery', 'helper', 'layer'], function () {
     var player = null;
     var ticketLoading = false;
     var retryCount = 0;
+    var lastRetryAt = 0;
+    var lastTicketAt = 0;
     var watermarkTimer = null;
     var lastPosition = getLastPosition();
 
@@ -90,6 +92,7 @@ layui.use(['jquery', 'helper', 'layer'], function () {
         });
 
         player.on('play', function () {
+            retryCount = 0;
             play();
         });
 
@@ -102,8 +105,11 @@ layui.use(['jquery', 'helper', 'layer'], function () {
         });
 
         player.on('error', function () {
-            if (retryCount < 1) {
+            var now = Date.now();
+
+            if (retryCount < 1 && now - lastRetryAt > 10000) {
                 retryCount++;
+                lastRetryAt = now;
                 layer.msg('播放授权已刷新，正在重试', {icon: 0, time: 1500});
                 loadPlayInfo();
                 return;
@@ -128,6 +134,12 @@ layui.use(['jquery', 'helper', 'layer'], function () {
     function loadPlayInfo() {
         if (ticketLoading) return;
 
+        var now = Date.now();
+
+        // 防止错误事件或连续点击在短时间内刷爆 play-ticket
+        if (now - lastTicketAt < 1500) return;
+
+        lastTicketAt = now;
         ticketLoading = true;
         $playMask.show();
 
@@ -137,10 +149,13 @@ layui.use(['jquery', 'helper', 'layer'], function () {
                 return;
             }
 
-            retryCount = 0;
             initPlayer(res.data || {});
         }).fail(function (xhr) {
-            if (xhr.status === 401) {
+            var apiMsg = xhr.responseJSON && xhr.responseJSON.msg;
+
+            if (apiMsg) {
+                layer.msg(apiMsg, {icon: 2});
+            } else if (xhr.status === 401) {
                 layer.msg('登录状态已失效，请重新登录', {icon: 2});
             } else if (xhr.status === 403) {
                 layer.msg('暂无播放权限', {icon: 2});
