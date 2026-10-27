@@ -113,7 +113,8 @@ PLAY_TOKEN_PROTECT_HOSTS=""
    - 使用错误的 UA 请求 `/chapter/play-auth` 应返回 403；
    - token 过期后应返回 403。
 6. CDN 远程鉴权未配置时，`pt` 参数不会生效，播放地址仍受火山 URL 鉴权有效期保护，但无法做到会话级短时校验。
-7. `file_remote` 指向第三方域名时，无法通过火山 CDN 远程鉴权保护；本阶段会跳过未在 `PLAY_TOKEN_PROTECT_HOSTS` / 点播分发域名中的地址，若全部被跳过则返回“点播资源尚未就绪”。
+7. `file_remote` 指向第三方域名或本地存储域名时，无法通过火山 CDN 远程鉴权保护。为保证播放可用性，接口仍会返回地址，但 `protected=false`，并写入日志；需要后续迁移到 VOD 或为本地文件增加 Nginx 鉴权。
+8. 如果日志出现 `PlayTicket: empty play urls`，说明 `ChapterVod` 没有取到任何地址，重点检查 `file_id` 是否仍存在、`file_transcode` 是否全部过期、`file_remote` 是否为空。
 
 ## 回滚
 

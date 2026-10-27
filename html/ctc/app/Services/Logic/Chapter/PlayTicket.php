@@ -71,6 +71,7 @@ class PlayTicket extends LogicService
         $playUrls = $chapterVodService->getPlayUrls($chapter->id);
 
         if (empty($playUrls)) {
+            $this->logEmptyPlayUrls($chapter);
             throw new BadRequestException('chapter.vod_not_ready');
         }
 
@@ -92,9 +93,10 @@ class PlayTicket extends LogicService
 
             $url = $this->normalizePlayUrl($url, $tokenService);
 
-            if (!$this->isProtectableUrl($url)) {
-                $this->getLogger('vod')->warning('PlayTicket: 跳过未受保护域名 ' . $this->getUrlHost($url) . ', chapter=' . $chapter->id);
-                continue;
+            $protected = $this->isProtectableUrl($url);
+
+            if (!$protected) {
+                $this->getLogger('vod')->warning('PlayTicket: 未受保护域名仍返回播放地址 ' . $this->getUrlHost($url) . ', chapter=' . $chapter->id);
             }
 
             $claims = [
@@ -110,7 +112,7 @@ class PlayTicket extends LogicService
             $token = $tokenService->create($claims, $tokenTtl);
 
             $item['url'] = $this->appendQuery($url, 'pt', $token);
-            $item['protected'] = true;
+            $item['protected'] = $protected;
 
             $result[$quality] = $item;
         }
@@ -159,6 +161,31 @@ class PlayTicket extends LogicService
         if ($realIp !== '') return trim($realIp);
 
         return $this->getClientIp();
+    }
+
+    /**
+     * 记录点播地址为空的诊断信息
+     *
+     * @param \App\Models\Chapter $chapter
+     */
+    protected function logEmptyPlayUrls($chapter)
+    {
+        $repo = new \App\Repos\Chapter();
+
+        $vod = $repo->findChapterVod($chapter->id);
+
+        $transcode = $vod->file_transcode ?? [];
+
+        if (is_string($transcode)) {
+            $transcode = json_decode($transcode, true) ?: [];
+        }
+
+        $this->getLogger('vod')->warning('PlayTicket: empty play urls ' . kg_json_encode([
+                'chapter_id' => $chapter->id,
+                'file_id' => (string)($vod->file_id ?? ''),
+                'has_remote' => !empty($vod->file_remote),
+                'transcode_count' => is_array($transcode) ? count($transcode) : 0,
+            ]));
     }
 
     /**

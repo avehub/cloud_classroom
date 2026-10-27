@@ -47,13 +47,20 @@ class ChapterVod extends Service
         // 优先按需通过 file_id (Vid) 获取火山官方实时带签名的有效播放流（带短时 Redis 缓存）
         $transcode = $vodService->getLivePlayTranscode($vod->file_id);
 
-        if (empty($transcode) && $vodService->isLastVidNotFound()) {
-            $this->getLogger('vod')->warning("ChapterVod: Vid={$vod->file_id} 在火山端不存在，忽略历史播放地址");
-            return [];
+        if (empty($transcode) && !empty($vod->file_transcode)) {
+            $history = $vod->file_transcode;
+
+            if (is_string($history)) {
+                $history = json_decode($history, true) ?: [];
+            }
+
+            if (is_array($history)) {
+                $transcode = $this->filterExpiredPlayUrls($history, $vod->chapter_id);
+            }
         }
 
-        if (empty($transcode) && !empty($vod->file_transcode)) {
-            $transcode = $this->filterExpiredPlayUrls($vod->file_transcode, $vod->chapter_id);
+        if (empty($transcode) && $vodService->isLastVidNotFound()) {
+            $this->getLogger('vod')->warning("ChapterVod: Vid={$vod->file_id} 在火山端不存在，且无可用历史播放地址");
         }
 
         if (empty($transcode)) return [];
