@@ -285,6 +285,16 @@ class Vod extends Service
     }
 
     /**
+     * 最近一次 GetPlayInfo 是否因视频不存在而失败
+     *
+     * @return bool
+     */
+    public function isLastVidNotFound()
+    {
+        return $this->client->isLastVidNotFound();
+    }
+
+    /**
      * 获取按需实时有效播放流（带 Redis 短时缓存）
      *
      * @param string $fileId

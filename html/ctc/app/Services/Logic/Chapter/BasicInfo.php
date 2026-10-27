@@ -7,7 +7,6 @@ use App\Models\Chapter as ChapterModel;
 use App\Models\ChapterLive as ChapterLiveModel;
 use App\Models\Course as CourseModel;
 use App\Repos\Chapter as ChapterRepo;
-use App\Services\ChapterVod as ChapterVodService;
 use App\Services\Live as LiveService;
 use App\Services\Logic\ChapterTrait;
 use App\Services\Logic\CourseTrait;
@@ -62,17 +61,6 @@ class BasicInfo extends LogicService
 
     protected function formatChapterVod(ChapterModel $chapter)
     {
-        $chapterVodService = new ChapterVodService();
-
-        $playUrls = $chapterVodService->getPlayUrls($chapter->id);
-
-        /**
-         *过滤播放地址为空的条目
-         */
-        foreach ($playUrls as $key => $value) {
-            if (empty($value['url'])) unset($playUrls[$key]);
-        }
-
         return [
             'id' => $chapter->id,
             'title' => $chapter->title,
@@ -80,7 +68,7 @@ class BasicInfo extends LogicService
             'model' => $chapter->model,
             'published' => $chapter->published,
             'deleted' => $chapter->deleted,
-            'play_urls' => $playUrls,
+            'duration' => (int)($chapter->attrs['duration'] ?? 0),
             'comment_count' => $chapter->comment_count,
             'user_count' => $chapter->user_count,
             'like_count' => $chapter->like_count,

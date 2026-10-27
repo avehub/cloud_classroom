@@ -47,8 +47,13 @@ class ChapterVod extends Service
         // 优先按需通过 file_id (Vid) 获取火山官方实时带签名的有效播放流（带短时 Redis 缓存）
         $transcode = $vodService->getLivePlayTranscode($vod->file_id);
 
+        if (empty($transcode) && $vodService->isLastVidNotFound()) {
+            $this->getLogger('vod')->warning("ChapterVod: Vid={$vod->file_id} 在火山端不存在，忽略历史播放地址");
+            return [];
+        }
+
         if (empty($transcode) && !empty($vod->file_transcode)) {
-            $transcode = $vod->file_transcode;
+            $transcode = $this->filterExpiredPlayUrls($vod->file_transcode, $vod->chapter_id);
         }
 
         if (empty($transcode)) return [];
@@ -75,6 +80,58 @@ class ChapterVod extends Service
         }
 
         return $result;
+    }
+
+    /**
+     * 过滤历史缓存中已过期的播放地址
+     *
+     * 火山签名地址通常带 l=YYYYMMDDHHMMSS... 参数，避免把过期地址下发到播放器。
+     *
+     * @param array $playUrls
+     * @param int $chapterId
+     * @return array
+     */
+    protected function filterExpiredPlayUrls(array $playUrls, $chapterId)
+    {
+        $result = [];
+
+        foreach ($playUrls as $key => $item) {
+            $url = (string)($item['url'] ?? '');
+
+            if ($url === '') continue;
+
+            if ($this->isExpiredPlayUrl($url)) {
+                $this->getLogger('vod')->warning("ChapterVod: 跳过过期播放地址 chapter={$chapterId}, quality={$key}");
+                continue;
+            }
+
+            $result[$key] = $item;
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param string $url
+     * @return bool
+     */
+    protected function isExpiredPlayUrl($url)
+    {
+        $query = [];
+
+        parse_str((string)parse_url($url, PHP_URL_QUERY), $query);
+
+        $expire = (string)($query['l'] ?? '');
+
+        if (!preg_match('/^(\d{14})/', $expire, $matches)) {
+            return false;
+        }
+
+        $timestamp = strtotime(substr($matches[1], 0, 4) . '-' . substr($matches[1], 4, 2) . '-' . substr($matches[1], 6, 2) . ' ' . substr($matches[1], 8, 2) . ':' . substr($matches[1], 10, 2) . ':' . substr($matches[1], 12, 2));
+
+        if ($timestamp === false) return false;
+
+        return $timestamp < time() - 300;
     }
 
     public function getRemotePlayUrls($chapterId)

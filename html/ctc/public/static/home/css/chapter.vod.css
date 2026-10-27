@@ -1,0 +1,41 @@
+/* 点播播放页：用户水印与开发者工具提示 */
+#player-watermark {
+    position: absolute;
+    z-index: 20;
+    left: 18px;
+    top: 18px;
+    padding: 4px 8px;
+    color: #fff;
+    font-size: 13px;
+    line-height: 1.4;
+    border-radius: 2px;
+    background: rgba(0, 0, 0, .18);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, .8);
+    opacity: .35;
+    pointer-events: none;
+    user-select: none;
+    white-space: nowrap;
+    transition: left .8s ease, top .8s ease;
+}
+
+.devtools-open .player-wrap::after {
+    content: "请关闭开发者工具后继续观看";
+    position: absolute;
+    z-index: 30;
+    right: 10px;
+    top: 10px;
+    padding: 4px 8px;
+    color: #fff;
+    font-size: 12px;
+    line-height: 1.4;
+    border-radius: 2px;
+    background: rgba(0, 0, 0, .65);
+    pointer-events: none;
+}
+
+@media screen and (max-width: 768px) {
+    #player-watermark {
+        font-size: 11px;
+        opacity: .28;
+    }
+}
