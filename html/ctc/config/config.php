@@ -132,6 +132,23 @@ $config['annotation']['lifetime'] = 7 * 86400;
 $config['csrf_token']['lifetime'] = 86400;
 
 /**
+ * 点播播放票据
+ *
+ * secret 留空时回退到 APP_KEY；生产环境建议单独配置 PLAY_TOKEN_SECRET。
+ * lifetime 是媒体播放地址上的 token 有效期，默认 2 小时，应大于单节课时长。
+ * bind_ip 默认关闭，避免移动网络切换导致播放中断；UA 默认参与绑定。
+ * bind_url 开启后 token 只能用于签发时的播放地址。
+ * protect_hosts 为空时自动使用后台点播分发域名。
+ */
+$config['play_token']['secret'] = getenv('PLAY_TOKEN_SECRET') ?: '';
+$config['play_token']['lifetime'] = (int)(getenv('PLAY_TOKEN_LIFETIME') ?: 7200);
+$config['play_token']['bind_ip'] = getenv('PLAY_TOKEN_BIND_IP') === 'true';
+$config['play_token']['bind_ua'] = getenv('PLAY_TOKEN_BIND_UA') !== 'false';
+$config['play_token']['bind_url'] = getenv('PLAY_TOKEN_BIND_URL') !== 'false';
+$config['play_token']['force_https'] = getenv('PLAY_TOKEN_FORCE_HTTPS') !== 'false';
+$config['play_token']['protect_hosts'] = array_values(array_filter(array_map('trim', explode(',', getenv('PLAY_TOKEN_PROTECT_HOSTS') ?: ''))));
+
+/**
  * 允许跨域
  */
 $config['cors']['enabled'] = true;

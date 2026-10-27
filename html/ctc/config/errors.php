@@ -12,6 +12,7 @@ $error['sys.bad_request'] = '无效的请求';
 $error['sys.not_found'] = '资源不存在';
 $error['sys.server_error'] = '服务器内部错误';
 $error['sys.service_unavailable'] = '服务不可用';
+$error['sys.too_many_requests'] = '请求过于频繁，请稍后再试';
 $error['sys.trans_rollback'] = '事务回滚';
 $error['sys.unknown_error'] = '未知错误';
 

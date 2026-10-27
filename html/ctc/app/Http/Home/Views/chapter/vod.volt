@@ -1,5 +1,9 @@
 {% extends 'templates/main.volt' %}
 
+{% block link_css %}
+    {{ css_link('home/css/chapter.vod.css', true, '2026102701') }}
+{% endblock %}
+
 {% block content %}
 
     {% set share_url = share_url('chapter',chapter.id,auth_user.id) %}
@@ -27,6 +31,7 @@
                     <span class="layui-icon layui-icon-play"></span>
                 </div>
                 <div id="player"></div>
+                <div id="player-watermark"></div>
             </div>
             <div id="comment-anchor"></div>
             <div class="vod-comment wrap">
@@ -46,7 +51,7 @@
         <input type="hidden" name="chapter.id" value="{{ chapter.id }}">
         <input type="hidden" name="chapter.cover" value="{{ chapter.course.cover }}">
         <input type="hidden" name="chapter.learning_url" value="{{ learning_url }}">
-        <input type="hidden" name="chapter.play_urls" value='{{ chapter.play_urls|json_encode }}'>
+        <input type="hidden" name="chapter.play_ticket_url" value="{{ url({'for':'home.chapter.play_ticket','id':chapter.id}) }}">
         <input type="hidden" name="chapter.me.position" value="{{ chapter.me.position }}">
         <input type="hidden" name="chapter.me.plan_id" value="{{ chapter.me.plan_id }}">
     </div>
@@ -67,7 +72,8 @@
     {{ js_include('lib/dplayer/DPlayer.min.js') }}
     {{ js_include('home/js/course.share.js') }}
     {{ js_include('home/js/chapter.show.js') }}
-    {{ js_include('home/js/chapter.vod.player.js') }}
+    {{ js_include('home/js/anti-debug.js', true, '2026102701') }}
+    {{ js_include('home/js/chapter.vod.player.js', true, '2026102702') }}
     {{ js_include('home/js/comment.js') }}
     {{ js_include('home/js/copy.js') }}
 

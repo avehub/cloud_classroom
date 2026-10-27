@@ -8,6 +8,7 @@ use App\Models\Course as CourseModel;
 use App\Services\Logic\Chapter\ChapterInfo as ChapterInfoService;
 use App\Services\Logic\Chapter\ChapterLike as ChapterLikeService;
 use App\Services\Logic\Chapter\Learning as ChapterLearningService;
+use App\Services\Logic\Chapter\PlayTicket as PlayTicketService;
 use App\Services\Logic\Course\BasicInfo as CourseInfoService;
 use App\Services\Logic\Course\ChapterList as CourseChapterListService;
 use App\Services\Logic\Url\FullH5Url as FullH5UrlService;
@@ -81,6 +82,25 @@ class ChapterController extends Controller
         $this->view->setVar('course', $course);
         $this->view->setVar('chapter', $chapter);
         $this->view->setVar('catalog', $catalog);
+    }
+
+    /**
+     * 申请点播播放票据
+     *
+     * @Post("/{id:[0-9]+}/play-ticket", name="home.chapter.play_ticket")
+     */
+    public function playTicketAction($id)
+    {
+        $service = new PlayTicketService();
+
+        $data = $service->handle($id);
+
+        $response = $this->jsonSuccess(['data' => $data]);
+
+        $response->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        $response->setHeader('Pragma', 'no-cache');
+
+        return $response;
     }
 
     /**
