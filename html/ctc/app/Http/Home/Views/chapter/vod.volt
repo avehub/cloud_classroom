@@ -73,7 +73,7 @@
     {{ js_include('home/js/course.share.js') }}
     {{ js_include('home/js/chapter.show.js') }}
     {{ js_include('home/js/anti-debug.js', true, '2026102701') }}
-    {{ js_include('home/js/chapter.vod.player.js', true, '2026102701') }}
+    {{ js_include('home/js/chapter.vod.player.js', true, '2026102702') }}
     {{ js_include('home/js/comment.js') }}
     {{ js_include('home/js/copy.js') }}
 
