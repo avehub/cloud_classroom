@@ -3,6 +3,8 @@
 
 namespace App\Http\Admin\Controllers;
 
+use App\Services\Auth\Admin as AdminAuth;
+use App\Services\Logic\Chapter\PlayTicket as PlayTicketService;
 use App\Traits\Response as ResponseTrait;
 
 /**
@@ -49,6 +51,34 @@ class PublicController extends \Phalcon\Mvc\Controller
         $region = kg_ip2region($ip);
 
         $this->view->setVar('region', $region);
+    }
+
+    /**
+     * 后台点播预览票据
+     *
+     * @Get("/vod/preview-ticket", name="admin.vod_preview_ticket")
+     */
+    public function vodPreviewTicketAction()
+    {
+        $auth = new AdminAuth();
+
+        if (!$auth->getAuthInfo()) {
+            $this->response->setStatusCode(401);
+            return $this->jsonError(['msg' => '会话已过期，请重新登录']);
+        }
+
+        $chapterId = $this->request->getQuery('chapter_id', 'int');
+
+        $service = new PlayTicketService();
+
+        $data = $service->handle($chapterId, true);
+
+        $response = $this->jsonSuccess(['data' => $data]);
+
+        $response->setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+        $response->setHeader('Pragma', 'no-cache');
+
+        return $response;
     }
 
     /**

@@ -5,7 +5,8 @@
     <div id="player"></div>
 
     <div class="layui-hide">
-        <input type="hidden" name="play_url" value="{{ play_url }}">
+        <input type="hidden" name="chapter.id" value="{{ chapter_id }}">
+        <input type="hidden" name="preview.ticket_url" value="{{ url({'for':'admin.vod_preview_ticket'},{'chapter_id':chapter_id}) }}">
     </div>
 
 {% endblock %}
@@ -36,15 +37,59 @@
 
     <script>
 
-        layui.use(['jquery'], function () {
+        layui.use(['jquery', 'layer'], function () {
 
             var $ = layui.jquery;
+            var layer = layui.layer;
 
-            var playUrl = $('input[name=play_url]').val();
+            var ticketUrl = $('input[name="preview.ticket_url"]').val();
+            var rates = [
+                {name: 'hd', label: '高清'},
+                {name: 'sd', label: '标清'},
+                {name: 'fd', label: '极速'},
+            ];
 
-            new DPlayer({
-                container: document.getElementById('player'),
-                video: {url: playUrl},
+            function buildVideoOptions(data) {
+                var playUrls = data.play_urls || {};
+                var quality = [];
+
+                $.each(rates, function (k, rate) {
+                    if (playUrls.hasOwnProperty(rate.name) && playUrls[rate.name].url) {
+                        quality.push({
+                            name: rate.label,
+                            url: playUrls[rate.name].url
+                        });
+                    }
+                });
+
+                if (quality.length > 0) {
+                    return {
+                        quality: quality,
+                        defaultQuality: 0
+                    };
+                }
+
+                return {
+                    url: data.url || '',
+                    type: data.type || 'auto'
+                };
+            }
+
+            $.getJSON(ticketUrl).done(function (res) {
+
+                if (!res || res.code !== 0) {
+                    layer.msg((res && res.msg) || '预览授权失败', {icon: 2});
+                    return;
+                }
+
+                new DPlayer({
+                    container: document.getElementById('player'),
+                    video: buildVideoOptions(res.data || {})
+                });
+
+            }).fail(function (xhr) {
+                var msg = xhr.responseJSON && xhr.responseJSON.msg;
+                layer.msg(msg || '预览授权失败', {icon: 2});
             });
 
         });
