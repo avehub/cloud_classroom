@@ -34,7 +34,7 @@
                             <td>{{ item.rate }}kbps</td>
                             <td>{{ item.size }}M</td>
                             <td>
-                                <span class="layui-btn kg-preview" data-chapter-id="{{ chapter.id }}" data-play-url="{{ item.url|url_encode }}">预览</span>
+                                <span class="layui-btn kg-preview" data-chapter-id="{{ chapter.id }}">预览</span>
                                 <span class="layui-btn layui-btn-primary kg-copy" data-clipboard-text="{{ item.url }}">复制</span>
                             </td>
                         </tr>
@@ -118,7 +118,7 @@
                             <input id="tc-hd-url" class="layui-input" type="text" name="file_remote[hd][url]" value="{{ remote_play_urls.hd.url }}">
                         </div>
                         <div class="layui-inline">
-                            <span class="layui-btn kg-preview" data-chapter-id="{{ chapter.id }}" data-play-url="{{ remote_play_urls.hd.url }}">预览</span>
+                            <span class="layui-btn kg-preview" data-chapter-id="{{ chapter.id }}">预览</span>
                             <span class="layui-btn layui-btn-primary kg-copy" data-clipboard-target="#tc-hd-url">复制</span>
                         </div>
                     {% else %}
@@ -138,7 +138,7 @@
                             <input id="tc-sd-url" class="layui-input" type="text" name="file_remote[sd][url]" value="{{ remote_play_urls.sd.url }}">
                         </div>
                         <div class="layui-inline">
-                            <span class="layui-btn kg-preview" data-chapter-id="{{ chapter.id }}" data-play-url="{{ remote_play_urls.sd.url }}">预览</span>
+                            <span class="layui-btn kg-preview" data-chapter-id="{{ chapter.id }}">预览</span>
                             <span class="layui-btn layui-btn-primary kg-copy" data-clipboard-target="#tc-sd-url">复制</span>
                         </div>
                     {% else %}
@@ -158,7 +158,7 @@
                             <input id="tc-fd-url" class="layui-input" type="text" name="file_remote[fd][url]" value="{{ remote_play_urls.fd.url }}">
                         </div>
                         <div class="layui-inline">
-                            <span class="layui-btn kg-preview" data-chapter-id="{{ chapter.id }}" data-play-url="{{ remote_play_urls.hd.url }}">预览</span>
+                            <span class="layui-btn kg-preview" data-chapter-id="{{ chapter.id }}">预览</span>
                             <span class="layui-btn layui-btn-primary kg-copy" data-clipboard-target="#tc-fd-url">复制</span>
                         </div>
                     {% else %}

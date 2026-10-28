@@ -123,3 +123,13 @@ PLAY_TOKEN_PROTECT_HOSTS=""
 - 清理 Volt 缓存：`rm -rf html/ctc/storage/cache/volt/*`。
 
 回滚后播放地址会重新出现在页面隐藏域中，不建议长期保留。
+
+## 后台视频预览
+
+后台课时编辑页的“预览”不再使用明文 `play_url`，改为：
+
+```http
+GET /admin/vod/preview-ticket?chapter_id={id}
+```
+
+该接口要求管理员登录，返回带 `pt` 的短时播放地址；未登录返回 401。管理员预览不要求购买课程，但仍受视频票据和 CDN 远程鉴权保护。

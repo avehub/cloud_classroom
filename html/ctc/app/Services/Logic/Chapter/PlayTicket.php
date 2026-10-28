@@ -37,7 +37,7 @@ class PlayTicket extends LogicService
      * @param int $chapterId
      * @return array
      */
-    public function handle($chapterId)
+    public function handle($chapterId, $admin = false)
     {
         $user = $this->getLoginUser();
 
@@ -51,17 +51,19 @@ class PlayTicket extends LogicService
             throw new BadRequestException('chapter.not_found');
         }
 
-        if ($chapter->published == 0 || $chapter->deleted == 1) {
+        if (!$admin && ($chapter->published == 0 || $chapter->deleted == 1)) {
             throw new BadRequestException('chapter.not_found');
         }
 
-        $course = $this->checkCourse($chapter->course_id);
+        if (!$admin) {
+            $course = $this->checkCourse($chapter->course_id);
 
-        $this->setCourseUser($course, $user);
-        $this->setChapterUser($chapter, $user);
+            $this->setCourseUser($course, $user);
+            $this->setChapterUser($chapter, $user);
 
-        if (!$this->ownedChapter) {
-            throw new ForbiddenException('sys.forbidden');
+            if (!$this->ownedChapter) {
+                throw new ForbiddenException('sys.forbidden');
+            }
         }
 
         $this->checkRateLimit($user->id, $chapter->id);

@@ -54,7 +54,7 @@
 
         {{ js_include('lib/clipboard.min.js') }}
         {{ js_include('admin/js/media.upload.js?v=7') }}
-        {{ js_include('admin/js/media.preview.js') }}
+        {{ js_include('admin/js/media.preview.js', true, '2026102701') }}
         {{ js_include('admin/js/copy.js') }}
 
     {% endif %}
