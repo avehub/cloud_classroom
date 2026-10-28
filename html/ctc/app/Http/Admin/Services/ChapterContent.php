@@ -6,6 +6,7 @@ namespace App\Http\Admin\Services;
 use App\Caches\CourseChapterList as CatalogCache;
 use App\Library\Utils\Word as WordUtil;
 use App\Models\Chapter as ChapterModel;
+use App\Models\ChapterVod as ChapterVodModel;
 use App\Models\Course as CourseModel;
 use App\Repos\Chapter as ChapterRepo;
 use App\Repos\Course as CourseRepo;
@@ -117,6 +118,39 @@ class ChapterContent extends Service
         }
     }
 
+    /**
+     * 获取点播扩展记录，不存在时创建
+     *
+     * 新建课时第一次上传视频时，kg_chapter_vod 尚未创建，
+     * 不能直接对 null 赋值。
+     *
+     * @param ChapterModel $chapter
+     * @return ChapterVodModel
+     */
+    protected function findOrCreateChapterVod(ChapterModel $chapter)
+    {
+        $chapterRepo = new ChapterRepo();
+
+        $vod = $chapterRepo->findChapterVod($chapter->id);
+
+        if ($vod) return $vod;
+
+        $vod = new ChapterVodModel();
+
+        $vod->course_id = $chapter->course_id;
+        $vod->chapter_id = $chapter->id;
+        $vod->file_id = '';
+        $vod->file_transcode = [];
+        $vod->file_remote = [];
+
+        $vod->create();
+
+        // Phalcon 在当前模型上未回填自增 id 时，重新读取一次，确保后续 update 生效
+        $created = $chapterRepo->findChapterVod($chapter->id);
+
+        return $created ?: $vod;
+    }
+
     protected function updateCosChapterVod(ChapterModel $chapter)
     {
         $post = $this->request->getPost();
@@ -125,9 +159,7 @@ class ChapterContent extends Service
 
         $fileId = $validator->checkFileId($post['file_id']);
 
-        $chapterRepo = new ChapterRepo();
-
-        $vod = $chapterRepo->findChapterVod($chapter->id);
+        $vod = $this->findOrCreateChapterVod($chapter);
 
         $attrs = $chapter->attrs;
 
@@ -206,9 +238,7 @@ class ChapterContent extends Service
 
         $validator->checkRemoteFile($hdUrl, $sdUrl, $fdUrl);
 
-        $chapterRepo = new ChapterRepo();
-
-        $vod = $chapterRepo->findChapterVod($chapter->id);
+        $vod = $this->findOrCreateChapterVod($chapter);
 
         $vod->file_remote = $fileRemote;
 
