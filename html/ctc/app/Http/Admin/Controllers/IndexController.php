@@ -4,7 +4,6 @@
 namespace App\Http\Admin\Controllers;
 
 use App\Http\Admin\Services\Index as IndexService;
-use App\Models\Role as RoleModel;
 use Phalcon\Mvc\View;
 
 /**
@@ -65,20 +64,6 @@ class IndexController extends Controller
 
         $this->view->setRenderLevel(View::LEVEL_ACTION_VIEW);
         $this->view->setVar('releases', $releases);
-    }
-
-    /**
-     * @Get("/phpinfo", name="admin.phpinfo")
-     */
-    public function phpinfoAction()
-    {
-        if ($this->authUser->admin_role != RoleModel::ROLE_ROOT) {
-            $this->forbidden();
-        }
-
-        echo phpinfo();
-
-        exit;
     }
 
 }
