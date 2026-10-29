@@ -1,5 +1,6 @@
 /.idea
 /.env
+/.lanes/
 /.reasonix
 /reasonix.toml
 /install.sh
