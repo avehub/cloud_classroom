@@ -24,7 +24,7 @@ class MaxCourseId extends Cache
     {
         $course = CourseModel::findFirst(['order' => 'id DESC']);
 
-        return $course->id ?? 0;
+        return $course ? (int)$course->id : 0;
     }
 
 }

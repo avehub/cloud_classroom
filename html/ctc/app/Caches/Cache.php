@@ -29,17 +29,32 @@ abstract class Cache extends Injectable
     {
         $key = $this->getKey($id);
 
-        if (!$this->cache->exists($key)) {
+        if ($this->cache->exists($key)) {
 
-            $content = $this->getContent($id);
-
-            $lifetime = $this->getLifetime();
-
-            $this->cache->save($key, $content, $lifetime);
-
-        } else {
             $content = $this->cache->get($key);
+
+            /**
+             * 历史缓存中可能写入了 null。Phalcon Redis 适配器读取 null 后，
+             * 同一请求内后续 get 会全部返回 null，因此这里按未命中处理，
+             * 删除脏键后回源重建，避免一个不存在的对象拖垮整页缓存。
+             */
+            if ($content !== null) {
+                return $content;
+            }
+
+            $this->cache->delete($key);
         }
+
+        $content = $this->getContent($id);
+
+        /**
+         * 不缓存 null，避免后续请求反复读到空值并污染缓存连接。
+         */
+        if ($content === null) {
+            return null;
+        }
+
+        $this->cache->save($key, $content, $this->getLifetime());
 
         return $content;
     }
@@ -69,25 +84,21 @@ abstract class Cache extends Injectable
     }
 
     /**
-     * 获取缓存有效期
-     *
-     * @return int
+     * 缓存有效期
      */
     abstract public function getLifetime();
 
     /**
-     * 获取键值
+     * 键值
      *
      * @param mixed $id
-     * @return string
      */
     abstract public function getKey($id = null);
 
     /**
-     * 获取原始内容
+     * 原始内容
      *
      * @param mixed $id
-     * @return mixed
      */
     abstract public function getContent($id = null);
 

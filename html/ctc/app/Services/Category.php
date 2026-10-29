@@ -55,16 +55,26 @@ class Category extends Service
             return [];
         }
 
-        if ($category->level == 1) {
-            return [
-                [
-                    'id' => $category->id,
-                    'name' => $category->name,
-                ]
-            ];
+        $result = [
+            [
+                'id' => $category->id,
+                'name' => $category->name,
+            ]
+        ];
+
+        /**
+         * 父级编号为 0，或历史脏数据 level=0，均按顶级分类处理。
+         * 不能去读取 category:0，否则会把 null 写入缓存并污染后续读取。
+         */
+        if ($category->parent_id <= 0 || $category->level <= 1) {
+            return $result;
         }
 
         $parent = $categoryCache->get($category->parent_id);
+
+        if (!$parent) {
+            return $result;
+        }
 
         return [
             [
