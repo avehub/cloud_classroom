@@ -49,8 +49,8 @@ echo "[INFO] 1. 正在导出 MySQL 数据库..."
 if container_running "${MYSQL_CONTAINER}"; then
     MYSQL_DUMP="${TARGET_DIR}/mysql_all_${DATE_STR}.sql.gz"
 
-    docker exec -i "${MYSQL_CONTAINER}" sh -c '
-        MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysqldump \
+    docker exec -e MYSQL_PWD="$(get_env MYSQL_ROOT_PASSWORD)" -i "${MYSQL_CONTAINER}" sh -c '
+        mysqldump \
             -uroot \
             --single-transaction \
             --quick \
@@ -129,8 +129,8 @@ fi
 echo "[INFO] 5. 正在生成发布清单..."
 MIGRATION_VERSION="unknown"
 if container_running "${MYSQL_CONTAINER}"; then
-    MIGRATION_VERSION="$(docker exec -i "${MYSQL_CONTAINER}" sh -c '
-        MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -N -e \
+    MIGRATION_VERSION="$(docker exec -e MYSQL_PWD="$(get_env MYSQL_ROOT_PASSWORD)" -i "${MYSQL_CONTAINER}" sh -c '
+        mysql -uroot -N -e \
         "SELECT MAX(version) FROM \`${MYSQL_DATABASE}\`.kg_migration" 2>/dev/null
     ' || echo unknown)"
 fi
