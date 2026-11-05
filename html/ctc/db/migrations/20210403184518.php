@@ -19,11 +19,21 @@ final class V20210403184518 extends AbstractMigration
     {
         $now = time();
 
+        $adminEmail = getenv('ADMIN_EMAIL') ?: 'admin@example.com';
+        $adminPassword = (string)getenv('ADMIN_PASSWORD');
+
+        if ($adminPassword === '') {
+            $adminPassword = bin2hex(random_bytes(8));
+            echo "Generated initial admin password for {$adminEmail}: {$adminPassword}" . PHP_EOL;
+        }
+
+        $salt = substr(bin2hex(random_bytes(8)), 0, 8);
+
         $account = [
             'id' => 10000,
-            'email' => '10000@163.com',
-            'password' => '1a1e4568f1a3740b8853a8a16e29bc87',
-            'salt' => 'MbZWxN3L',
+            'email' => $adminEmail,
+            'password' => md5(md5($adminPassword) . md5($salt)),
+            'salt' => $salt,
             'create_time' => $now,
         ];
 

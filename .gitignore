@@ -1,5 +1,9 @@
 /.idea
+# Environment overrides (keep the template)
 /.env
+/.env.*
+!/.env.default
+!/.env.example
 /.lanes/
 /.reasonix
 /reasonix.toml
@@ -33,9 +37,9 @@
 /getPostnt.
 /request-
 .DS_Store
-/html/ctc/storage/cache 
-/html/ctc/storage/log 
-/html/ctc/storage/tmp 
+/html/ctc/storage/cache
+/html/ctc/storage/log
+/html/ctc/storage/tmp
 /html/ctc/storage/upload
 /html/ctc/storage/backup
 /html/ctc/vendor
@@ -57,3 +61,6 @@
 
 # one-time PHP 8.2 cutover marker
 /.phalcon5-cutover-done
+
+# Private/internal operational documents and local tooling
+/.internal/

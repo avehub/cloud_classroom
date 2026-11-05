@@ -1,7 +1,9 @@
 # 服务登录与暴力破解日志查询手册
 
-适用对象：`115.190.239.244`（`k.gaodekuai.cn` 源站，Ubuntu 24.04）
-用途：日后在服务器或火山云控制台查看 SSH 登录、暴力破解、后台登录、数据库连接失败等安全数据。
+适用对象：生产服务器（示例：`<server-ip>` / `<domain>`，Ubuntu 24.04）
+用途：在服务器或云控制台查看 SSH 登录、暴力破解、后台登录、数据库连接失败等安全数据。
+
+> 以下命令中的 `${PROJECT_DIR:-/opt/cloud_classroom}` 和 `${SITE_URL:-http://127.0.0.1}` 请按实际部署替换；不要把真实 IP、域名、`.env` 或密码提交到仓库。
 
 ## 1. 最快入口
 
@@ -18,14 +20,11 @@
 | 火山云网络攻击 | 火山引擎控制台 → 云防火墙 → 入侵防御/流量日志 |
 | 火山云账号/API 操作 | 火山引擎控制台 → 操作审计/访问控制（若已开通） |
 
-本机现状：
-- `elkeid-agent`：`enabled/active`（主机安全 agent）
-- `cloud-monitor-agent`：`enabled/active`（云监控 agent）
-- `fail2ban`：`enabled/active`
-- `ssh.socket`：`enabled/active`；`ssh.service` 显示 `disabled` 是正常的 socket 激活方式
-- `auth.log` 保留约 4 周（当前 + `.1` + `.2.gz` ~ `.4.gz`）
-- `journald` 持久化，最早可查 2026-09-07
-- `nginx/ctc.access.log` 当前约 58MB，未配置独立 logrotate，建议后续接入日志服务或轮转
+建议确认：
+- 主机安全、云监控、fail2ban 是否正常运行
+- `ssh.socket` 是否处于 `enabled/active`（socket 激活方式下 `ssh.service` 显示 `disabled` 属正常）
+- `auth.log`、`journald` 的保留周期是否满足审计要求
+- Nginx access log 是否配置 logrotate 或日志服务采集
 
 ## 2. SSH 登录与暴力破解
 
@@ -78,7 +77,7 @@ grep -h 'Invalid user' /var/log/auth.log | tail -30
 ### 2.4 journald 方式
 
 ```bash
-journalctl _COMM=sshd --since '2026-11-01' --no-pager | grep -E 'Accepted|Failed|Invalid'
+journalctl _COMM=sshd --since '7 days ago' --no-pager | grep -E 'Accepted|Failed|Invalid'
 journalctl -u ssh --since '24 hours ago' --no-pager | tail -100
 ```
 
@@ -122,7 +121,7 @@ zgrep 'Ban ' /var/log/fail2ban.log*.gz 2>/dev/null | tail -30
 cat /etc/fail2ban/jail.d/sshd.local
 ```
 
-当前策略：`maxretry=10`、`findtime=10m`、`bantime=1h`、`bantime.increment=true`；管理员当前出口 IP 已临时加入 `ignoreip`。
+当前策略：`maxretry=10`、`findtime=10m`、`bantime=1h`、`bantime.increment=true`；如需临时放行管理员出口 IP，可将其加入 `ignoreip`；不要把真实 IP 写入仓库。
 
 ## 4. 业务后台登录 / 管理员操作
 
@@ -132,7 +131,7 @@ cat /etc/fail2ban/jail.d/sshd.local
 - 用户、IP、路由、路径、请求参数（敏感字段已脱敏）、时间。
 
 ```bash
-cd /home/docker/cloud_classroom
+cd ${PROJECT_DIR:-/opt/cloud_classroom}
 ROOTPW=$(grep -E '^MYSQL_ROOT_PASSWORD=' .env | cut -d= -f2- | tr -d '"')
 docker exec -e MYSQL_PWD="$ROOTPW" ctc-mysql mysql -uroot -D ctc -e "
 SELECT id,user_id,user_name,user_ip,req_route,req_path,
@@ -181,7 +180,7 @@ LIMIT 30;
 ### 4.3 后台登录请求
 
 ```bash
-cd /home/docker/cloud_classroom
+cd ${PROJECT_DIR:-/opt/cloud_classroom}
 grep 'POST /admin/login' nginx/log/ctc.access.log | tail -30
 ```
 
@@ -194,7 +193,7 @@ grep 'POST /admin/login' nginx/log/ctc.access.log | awk '{print $1}' | sort | un
 ## 5. Web 扫描 / 攻击探测
 
 ```bash
-cd /home/docker/cloud_classroom
+cd ${PROJECT_DIR:-/opt/cloud_classroom}
 grep -E '\.env|\.git|wp-login|phpmyadmin|xmlrpc|/vendor/' nginx/log/ctc.access.log | tail -50
 ```
 
@@ -216,13 +215,13 @@ awk '{print $9}' nginx/log/ctc.access.log | sort | uniq -c | sort -rn | head
 ### 6.1 MySQL 连接失败
 
 ```bash
-tail -200 /home/docker/cloud_classroom/mysql/log/error.log | grep -iE 'access denied|aborted connection|error'
+tail -200 ${PROJECT_DIR:-/opt/cloud_classroom}/mysql/log/error.log | grep -iE 'access denied|aborted connection|error'
 ```
 
 ### 6.2 Redis
 
 ```bash
-tail -100 /home/docker/cloud_classroom/redis/log/redis.log
+tail -100 ${PROJECT_DIR:-/opt/cloud_classroom}/redis/log/redis.log
 ```
 
 说明：Redis 5 默认不记录每次 AUTH 失败；如需审计，需要升级 Redis 6+ 使用 ACL，或通过代理/日志服务采集。
@@ -244,7 +243,7 @@ tail -100 /home/docker/cloud_classroom/redis/log/redis.log
 3. **日志服务 TLS**
    - 采集 `/var/log/auth.log`
    - 采集 `/var/log/fail2ban.log`
-   - 采集 `/home/docker/cloud_classroom/nginx/log/ctc.access.log`
+   - 采集 `${PROJECT_DIR:-/opt/cloud_classroom}/nginx/log/ctc.access.log`
    - 配置“登录失败/封禁/5xx”告警
 4. **云监控**
    - 主机 CPU/内存/网络告警
@@ -267,13 +266,13 @@ fail2ban-client status sshd
 last -a | head -10
 
 # 后台登录请求
-grep 'POST /admin/login' /home/docker/cloud_classroom/nginx/log/ctc.access.log | tail -20
+grep 'POST /admin/login' ${PROJECT_DIR:-/opt/cloud_classroom}/nginx/log/ctc.access.log | tail -20
 
 # Web 扫描
-grep -E '\.env|\.git|wp-login|phpmyadmin' /home/docker/cloud_classroom/nginx/log/ctc.access.log | tail -20
+grep -E '\.env|\.git|wp-login|phpmyadmin' ${PROJECT_DIR:-/opt/cloud_classroom}/nginx/log/ctc.access.log | tail -20
 
 # 应用健康
-curl -fsS https://k.gaodekuai.cn/health
+curl -fsS ${SITE_URL:-http://127.0.0.1}/health
 ```
 
 ## 9. 注意

@@ -34,7 +34,7 @@ services:
         max-file: "3"
     healthcheck:
       # 探测 /health 而非首页：首页请求会把 http://localhost 前缀写进 Redis 缓存，污染前台图片地址
-      test: ["CMD-SHELL", "curl -kfsS --resolve k.gaodekuai.cn:443:127.0.0.1 https://k.gaodekuai.cn/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS -H \"Host: ${SITE_DOMAIN:-localhost}\" http://127.0.0.1/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

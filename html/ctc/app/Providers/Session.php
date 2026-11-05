@@ -24,7 +24,7 @@ class Session extends Provider
         $this->di->setShared($this->serviceName, function () use ($config, $di) {
 
             /**
-             * 同时支持 HTTP (gdk.cn) 与 HTTPS (k.gaodekuai.cn) 访问。
+             * 同时支持 HTTP 与 HTTPS 访问。
              * Secure Cookie 在 HTTP 下不会被浏览器回传，需按当前请求协议动态设置。
              */
             $secure = '0';

@@ -9,10 +9,15 @@ use GuzzleHttp\Client;
 class SyncAppInfoTask extends Task
 {
 
-    const API_BASE_URL = 'https://www.gaodekuai.cn/api';
-
     public function mainAction()
     {
+        $apiBaseUrl = trim((string)getenv('APP_INFO_SYNC_URL'));
+
+        if ($apiBaseUrl === '') {
+            echo '------ app info sync disabled ------' . PHP_EOL;
+            return;
+        }
+
         echo '------ start sync app info ------' . PHP_EOL;
 
         $site = $this->getSettings('site');
@@ -34,7 +39,7 @@ class SyncAppInfoTask extends Task
 
         $client = new Client();
 
-        $url = sprintf('%s/instance/collect', self::API_BASE_URL);
+        $url = sprintf('%s/instance/collect', rtrim($apiBaseUrl, '/'));
 
         $client->request('POST', $url, ['form_params' => $params]);
 

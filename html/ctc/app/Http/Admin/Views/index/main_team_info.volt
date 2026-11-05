@@ -1,5 +1,5 @@
 <div class="layui-card layui-text">
-    <div class="layui-card-header">开发团队</div>
+    <div class="layui-card-header">项目信息</div>
     <div class="layui-card-body">
         <table class="layui-table">
             <colgroup>
@@ -8,8 +8,12 @@
             </colgroup>
             <tbody>
             <tr>
-                <td>版权所有</td>
-                <td><a href="https://www.gaodekuai.com" target="_blank">陕西众友合联品牌运营管理有限公司</a></td>
+                <td>项目名称</td>
+                <td>{{ app_info.name }}</td>
+            </tr>
+            <tr>
+                <td>项目主页</td>
+                <td><a href="{{ app_info.link }}" target="_blank">{{ app_info.link }}</a></td>
             </tr>
             </tbody>
         </table>

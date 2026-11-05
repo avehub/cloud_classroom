@@ -6,13 +6,21 @@ namespace App\Library;
 class AppInfo
 {
 
-    protected $name = '稿得快云课堂';
+    protected $name = '云课堂';
 
-    protected $alias = 'GDK Cloud Classroom';
+    protected $alias = 'Cloud Classroom';
 
-    protected $link = 'https://www.gaodekuai.cn';
+    protected $link = '#';
 
     protected $version = '1.0.0';
+
+    public function __construct()
+    {
+        $this->name = getenv('APP_NAME') ?: $this->name;
+        $this->alias = getenv('APP_ALIAS') ?: $this->alias;
+        $this->link = getenv('APP_LINK') ?: (getenv('SITE_URL') ?: $this->link);
+        $this->version = getenv('APP_VERSION') ?: $this->version;
+    }
 
     public function __get($name)
     {

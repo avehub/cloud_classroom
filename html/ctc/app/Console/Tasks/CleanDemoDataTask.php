@@ -10,6 +10,7 @@ use App\Caches\IndexSlideList as IndexSlideListCache;
 use App\Models\Account as AccountModel;
 use App\Models\Category as CategoryModel;
 use App\Repos\User as UserRepo;
+use App\Library\Utils\Password;
 use App\Services\Utils\IndexPageCache as IndexPageCacheUtil;
 
 class CleanDemoDataTask extends Task
@@ -54,13 +55,23 @@ class CleanDemoDataTask extends Task
     {
         echo '------ start create root user ------' . PHP_EOL;
 
+        $email = getenv('ADMIN_EMAIL') ?: 'admin@example.com';
+        $plainPassword = (string)getenv('ADMIN_PASSWORD');
+
+        if ($plainPassword === '') {
+            $plainPassword = bin2hex(random_bytes(8));
+            echo "Generated demo admin password for {$email}: {$plainPassword}" . PHP_EOL;
+        }
+
+        $salt = Password::salt();
+
         $account = new AccountModel();
 
         $account->assign([
             'id' => 10000,
-            'email' => '10000@163.com',
-            'password' => '1a1e4568f1a3740b8853a8a16e29bc87',
-            'salt' => 'MbZWxN3L',
+            'email' => $email,
+            'password' => Password::hash($plainPassword, $salt),
+            'salt' => $salt,
             'create_time' => time(),
         ]);
 

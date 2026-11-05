@@ -9,7 +9,6 @@ use App\Caches\SiteTodayStat as SiteTodayStatCache;
 use App\Library\AppInfo;
 use App\Library\Utils\ServerInfo;
 use App\Repos\Stat as StatRepo;
-use GuzzleHttp\Client;
 
 class Index extends Service
 {
@@ -111,15 +110,21 @@ class Index extends Service
 
     public function getReleases()
     {
-        $content = [
-                        [
-                            "title" => "稿得快云课堂v1.0.0 发布",
-                            "url" => "https://www.gaodekuai.cn",
-                            "date" => "2026-09-01"
-                        ]
-        ];
+        $appInfo = new AppInfo();
 
-        return $content['releases'] ?? [];
+        $link = (string)$appInfo->get('link');
+
+        if ($link === '' || $link === '#') {
+            return [];
+        }
+
+        return [
+            [
+                'title' => sprintf('%s %s', $appInfo->get('name'), $appInfo->get('version')),
+                'url' => $link,
+                'date' => '',
+            ],
+        ];
     }
 
 }

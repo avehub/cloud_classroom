@@ -1,207 +1,331 @@
-### 项目介绍
+# CTC 云课堂
 
-基于酷瓜云课堂二次开发的支持云课堂，支持火山云点播、本地存储
+基于 [酷瓜云课堂](https://gitee.com/koogua/course-tencent-cloud) 二次开发的开源在线教育系统，提供课程、点播、直播、专栏、问答、会员、订单、支付、后台管理等能力。
 
-### 安装指南
+当前版本已完成 **PHP 8.2.35 + Phalcon 5.23** 升级，并补充了火山引擎点播、播放票据/防盗链、H5/微信登录、短信通知、Docker Compose 部署与安全加固等能力。
 
-下载安装脚本
-
-```
-git clone git@github.com:avehub/cloud_classroom.git
-```
-
-增加执行权限
-
-```
-chmod +x install.sh
-```
-
-根据实际情况修改配置
-
-```
-nano install.sh
-```
-
-执行安装，快慢取决于网络，当有错误或者超时请再次重试安装
-
-```
-bash install.sh
-```
-
-### 访问网站
-
-* 管理账号：10000@163.com / 123456
-* 前台地址：http://{your-domain}.com
-* 后台地址：http://{your-domain}.com/admin
-
-后续设置： [系统设置](https://koogua.com/page/wiki)
-
-
-### 结束安装
-
-安装完成，请删除安装脚本
-
-```
-rm install.sh
-```
-
-
-
-探查完毕，信息齐全。下面是基于源码（`/Users/admin/Desktop/Item/class/html/ctc`）的完整二开指南。
+> 本文档只使用示例域名和占位符。部署时请通过 `.env` 和服务器本地配置文件填写真实信息，不要把域名、IP、账号、密码、证书或日志提交到仓库。
 
 ---
 
-# 酷瓜云课堂源码目录全解析（二次开发指南）
+## 功能概览
 
-## 一、技术栈与架构总览
+- 课程 / 章节 / 课时管理，支持点播、直播、图文、专栏
+- 火山引擎 VOD 点播、HLS 播放、播放票据与防盗链
+- 本地存储与对象存储切换
+- 前台学员端、后台管理端、H5 / API 接口
+- 手机号/邮箱验证码登录，未注册账号自动创建
+- 微信登录、账号绑定、密码设置与找回
+- 会员、优惠券、订单、支付、退款、积分
+- 全文检索（Xunsearch）、学习记录同步、定时任务
+- WebSocket 实时通知与聊天
+- Docker Compose 一键编排
 
-| 层 | 技术 |
+---
+
+## 技术栈
+
+| 层次 | 技术 |
 |---|---|
-| 框架 | **Phalcon 3.4**（PHP 7.3，C 扩展框架）+ Volt 模板引擎 |
-| 前端 | 服务端渲染 + **Layui**（jQuery 体系），无独立前端工程 |
-| 数据 | MySQL 5.7（Phinx 迁移管理）+ Redis（缓存/会话） |
-| 搜索 | Xunsearch（中文全文检索） |
-| 实时通信 | Workerman GatewayWorker（websocket，端口 8282） |
-| 定时任务 | 每分钟 cron 调度 `scheduler.php` → 各 Task（订单关闭、学习记录同步、索引同步等） |
+| 后端框架 | PHP 8.2.35 + Phalcon 5.23（C 扩展） |
+| 模板引擎 | Volt |
+| 架构分层 | Controller（注解路由）→ Repos → Models，Services/Builders/Validators 横向支撑 |
+| 前端 | Layui + jQuery + 服务端渲染，无独立前端构建工程 |
+| 数据库 | MySQL 5.7 + Phinx 迁移 |
+| 缓存 / 会话 | Redis 5 |
+| 全文检索 | Xunsearch |
+| 实时通信 | Workerman GatewayWorker（WebSocket 8282） |
+| Web 服务 | Nginx 1.18 |
+| 运行编排 | Docker Compose |
+| 定时任务 | Supervisor + `scheduler.php` + `console.php` |
 
-**架构分层**（请求流向）：`nginx → Controller（注解路由）→ Repos（数据仓库）→ Models（ORM）`，横向由 `Services`（支付/搜索/存储/邮件等）、`Caches`、`Builders`、`Validators` 支撑。
+---
 
-## 二、目录结构地图（✏️=二开主战场，🔒=不要动）
+## 目录结构
 
-```
-html/ctc/
-├── app/                          ✏️ 全部业务代码（核心改动区）
-│   ├── Http/                     ✏️ 三大前端模块（页面/接口）
-│   │   ├── Home/                 ✏️ 前台（学员端网站）
-│   │   │   ├── Controllers/      ✏️ 30+ 控制器：Course/CourseChapter/Article/
-│   │   │   │                        Question/Answer/Article/Order/Trade/Account/
-│   │   │   │                        UserConsole(个人中心)/TeacherConsole/Vip...
-│   │   │   ├── Views/            ✏️ Volt 模板：course/ article/ index/ user/
-│   │   │   │                        templates/(布局) partials/ macros/(宏)
-│   │   │   └── Services/         ✏️ 前台表单/业务封装
-│   │   ├── Admin/                ✏️ 后台管理（course/chapter/user/order/setting/
-│   │   │                            stat/slide/nav/category/role... 35 个视图组）
-│   │   └── Api/                  ✏️ APP/小程序接口（仅 Controllers+Services，无视图，输出 JSON）
-│   ├── Models/                   ✏️ 73 个 ORM 模型（kg_ 前缀表：Course/Chapter/Account...）
-│   ├── Repos/                    ✏️ 数据仓库层（查询封装，Controller 主要调这里）
-│   ├── Services/                 ✏️ 共享服务：Pay(支付)/Search(搜索)/OAuth/Mailer/
-│   │                                Smser/Live/ChapterVod/CourseStat/Logic/...
-│   ├── Builders/                 ✏️ 复杂查询构建器
-│   ├── Validators/               ✏️ 表单验证
-│   ├── Caches/                   ✏️ 缓存读写封装（Redis）
-│   ├── Console/Tasks/            ✏️ 32 个 CLI 任务（索引重建/订单关闭/学习同步/升级...）
-│   ├── Listeners/ Providers/     🔧 框架事件与 DI 注册（一般不改）
-│   └── Library/ Exceptions/ Traits/  🔧 基础库（按需）
-├── public/
-│   ├── index.php                 🔒 Web 入口（别动）
-│   └── static/                   ✏️ 前端静态资源（nginx 直接服务）
-│       ├── home/{js,css,img}/    ✏️ 前台 JS：course.show.js / chapter.vod.player.js...
-│       ├── admin/{js,css,img}/   ✏️ 后台 JS：common.js / content.editor.js...
-│       └── lib/                  🔧 layui、echarts 等第三方库
-├── config/                       ✏️ config.php(密钥/DB/Redis) routes.php(路由扫描)
-│                                   events.php errors.php alipay/ wxpay/ xs.*.ini(搜索字段)
-├── db/migrations/                ✏️ Phinx 数据库迁移（改表结构在这里）
-├── websocket/                    ✏️ Workerman 启动脚本+事件（聊天/实时通知逻辑）
-├── bootstrap/                    🔧 框架引导（Kernel/错误处理，一般不动）
-├── console.php                   🔧 CLI 入口：php console.php --task=x --action=y
-├── scheduler.php                 ✏️ 定时任务注册表（每分钟调度哪些 Task、频率）
-├── storage/                      🔒 cache(volt编译产物/metadata/annotations) log/ —— 可清空勿手改
-└── vendor/                       🔒 composer 依赖（严禁直接改）
+```text
+.
+├── html/ctc/                       # 核心业务代码（挂载到 PHP 容器）
+│   ├── app/
+│   │   ├── Http/Home/              # 学员端：Controllers / Views / Services
+│   │   ├── Http/Admin/             # 管理后台
+│   │   ├── Http/Api/               # API / H5 接口（JSON）
+│   │   ├── Models/                 # ORM 模型（kg_ 前缀表）
+│   │   ├── Repos/                  # 查询仓库层
+│   │   ├── Services/               # 支付、点播、搜索、短信、直播等业务服务
+│   │   ├── Builders/               # 复杂查询构建器
+│   │   ├── Validators/             # 表单校验
+│   │   ├── Caches/                 # Redis 缓存封装
+│   │   └── Console/Tasks/          # CLI / 定时任务
+│   ├── config/                     # 配置模板与路由
+│   ├── db/migrations/              # Phinx 迁移脚本
+│   ├── public/                     # Web 根目录与静态资源
+│   ├── storage/                    # 缓存、日志、上传（运行时生成）
+│   ├── websocket/                  # Workerman 脚本与事件
+│   ├── console.php                 # CLI 入口
+│   └── scheduler.php               # 定时任务注册
+├── docker-compose.yml
+├── php/                            # PHP 8.2 / Phalcon 5 运行镜像
+├── nginx/                          # Nginx 配置模板与证书挂载目录
+├── mysql/                          # MySQL 配置与数据目录
+├── redis/                          # Redis 配置与数据目录
+├── xunsearch/                      # Xunsearch 数据目录
+├── reload-prod.sh                  # 生产发布脚本
+├── deploy-prod.sh                  # 首次部署 / 自愈脚本
+├── backup.sh                       # 数据库、Redis、上传文件、配置备份
+└── docs/                           # 公开技术文档
 ```
 
-**路由机制**：`config/routes.php` 自动扫描三个模块的 `Controllers/` 目录，配合控制器内 **Phalcon 注解**注册路由 → 新增页面 = 新建控制器方法（写注解）+ 对应 Views 模板。
+---
 
-## 三、典型改动场景对照表
+## 环境要求
 
-| 你想改什么 | 改哪里 |
-|---|---|
-| 前台页面布局/样式/文案 | `app/Http/Home/Views/**.volt` + `public/static/home/css/*.css` |
-| 前台交互逻辑 | `public/static/home/js/*.js`（每页一个 js，如 course.show.js） |
-| 前台页面数据/业务 | `app/Http/Home/Controllers/XxxController.php`（+ 对应 `Home/Services/`） |
-| 后台管理页面 | `app/Http/Admin/Views/**.volt` + `public/static/admin/{js,css}` + `Admin/Controllers/` |
-| APP/小程序接口 | `app/Http/Api/Controllers/`（返回 JSON，不走视图） |
-| 新增数据表/改字段 | `db/migrations/` 新建 Phinx 迁移 + `app/Models/` 对应模型 |
-| 业务规则（下单/退款/积分…） | `app/Services/`、`app/Repos/`、`app/Builders/` |
-| 支付/存储/短信/邮件配置 | `config/config.php` + `config/alipay|wxpay/` |
-| 搜索字段调整 | `config/xs.course.ini` 等 + 重建索引 |
-| 定时任务增减 | `app/Console/Tasks/` 新建 Task + `scheduler.php` 注册 |
-| 实时推送/聊天逻辑 | `websocket/Events.php`（改后需重启容器） |
-| 站点导航/菜单/轮播 | 大多在 **后台管理界面** 配置（存 DB），不用改代码 |
+- Linux x86_64
+- Docker Engine 24+，Docker Compose v2
+- 建议最低 2 vCPU / 4 GB 内存；生产建议 2 vCPU / 8 GB 起步
+- 已解析到服务器的域名（可选，但生产环境应启用 HTTPS）
+- 可访问火山引擎、短信服务商等外部依赖（按需）
 
-## 四、修改后的“重新部署”流程
+---
 
-**关键认知**：`html/` 是 bind-mount 挂载进容器的，**改源码即时生效，不需要重新 build 镜像**。需要处理的只有“缓存”和“常驻进程”：
+## 快速开始
 
-### 场景 1：改 PHP 代码（Controller/Service/Repo/Model）
+### 1. 获取代码
+
 ```bash
-# 无需任何操作，刷新浏览器即生效
-# 若不生效（极少见，opcache 缓存），重启：
+git clone <your-repository-url> cloud_classroom
+cd cloud_classroom
+```
+
+### 2. 创建环境配置
+
+```bash
+cp .env.default .env
+```
+
+至少修改以下配置：
+
+```dotenv
+APP_ENV=pro
+APP_KEY="<openssl rand -hex 32 生成>"
+SITE_DOMAIN="class.example.com"
+SITE_URL="https://class.example.com"
+WEBSOCKET_CONNECT_ADDRESS="class.example.com:8282"
+
+MYSQL_ROOT_PASSWORD="<强随机密码>"
+MYSQL_PASSWORD="<强随机密码>"
+REDIS_PASSWORD="<强随机密码>"
+
+# 首次执行数据库迁移时创建管理员
+ADMIN_EMAIL="admin@example.com"
+ADMIN_PASSWORD="<强随机密码；留空则自动生成并打印到迁移日志>"
+```
+
+生成随机密钥：
+
+```bash
+openssl rand -hex 32
+```
+
+> `.env` 已加入 `.gitignore`，不要提交。`html/ctc/config/config.php` 已改为环境变量驱动，不要把密码或密钥写死在其中。
+
+### 3. 配置 Nginx
+
+本地 / HTTP 环境：
+
+```bash
+cp nginx/conf.d/default.local.conf.sample nginx/conf.d/default.conf
+```
+
+生产 HTTPS 环境：
+
+```bash
+cp nginx/conf.d/default.secure.conf.sample nginx/conf.d/default.conf
+```
+
+然后修改 `nginx/conf.d/default.conf` 中的：
+
+- `server_name`
+- `ssl_certificate`
+- `ssl_certificate_key`
+
+证书文件放到 `nginx/ssl/`。该目录和 `nginx/conf.d/*.conf` 都不会进入 Git。
+
+### 4. 构建并启动
+
+```bash
+docker compose build
+docker compose up -d
+```
+
+### 5. 安装 PHP 依赖
+
+```bash
+docker compose exec -T -w /var/www/html/ctc php \
+  composer install --no-dev --prefer-dist --optimize-autoloader
+```
+
+### 6. 初始化数据库
+
+```bash
+docker compose exec -T -w /var/www/html/ctc php \
+  php vendor/bin/phinx migrate -c phinx.php
+
+docker compose exec -T -w /var/www/html/ctc php \
+  php console.php upgrade
+```
+
+首次迁移会根据 `.env` 中的 `ADMIN_EMAIL` / `ADMIN_PASSWORD` 创建管理员。若 `ADMIN_PASSWORD` 留空，迁移日志会输出随机生成的初始密码，请立即保存并登录后台修改。
+
+### 7. 访问
+
+- 前台：`https://class.example.com/`
+- 后台：`https://class.example.com/admin`
+- 健康检查：`https://class.example.com/health`
+
+---
+
+## 配置说明
+
+所有敏感配置统一放在项目根目录 `.env`，由 Docker Compose 注入容器。
+
+| 变量 | 说明 |
+|---|---|
+| `APP_ENV` | `dev` / `test` / `pro` |
+| `APP_KEY` | 应用密钥，必须使用强随机值 |
+| `SITE_DOMAIN` | 站点域名，用于 Nginx 健康检查和 WebSocket |
+| `SITE_URL` | 站点完整地址（含协议），用于生成绝对 URL |
+| `WEBSOCKET_CONNECT_ADDRESS` | 客户端 WebSocket 地址 |
+| `MYSQL_*` | MySQL 连接信息 |
+| `REDIS_*` | Redis 连接信息 |
+| `SMS_*` | 短信服务商 AccessKey、签名、模板 |
+| `PLAY_TOKEN_*` | 点播播放票据、防盗链、有效期 |
+| `ADMIN_EMAIL` / `ADMIN_PASSWORD` | 首次迁移创建的管理员账号 |
+| `APP_NAME` / `APP_ALIAS` | 应用名称与显示名 |
+| `APP_LINK` | 应用主页，留空时回退到 `SITE_URL` |
+| `APP_SUPPORT_URL` / `APP_COMMUNITY_URL` | 后台帮助 / 社区入口，留空回到后台首页 |
+| `APP_INFO_SYNC_URL` | 应用信息上报接口；**默认留空关闭**，避免向第三方发送服务器信息 |
+
+> 修改 `.env` 后需要重建读取该变量的容器（至少 `php`；`nginx` 健康检查也会读取 `SITE_DOMAIN`）：
+>
+> ```bash
+> docker compose up -d --force-recreate php nginx
+> ```
+
+---
+
+## 本地开发
+
+### 修改 PHP 代码
+
+通常即时生效。若启用 OPcache 且未刷新：
+
+```bash
 docker compose restart php
 ```
 
-### 场景 2：改 Volt 模板（.volt）⚠️ 必做
-Phalcon 默认**不检测模板变更**，编译产物缓存在 `storage/cache/volt/`：
-```bash
-rm -rf html/ctc/storage/cache/volt/*     # 清模板缓存
-# 若同时改了 Model（字段/关联），再清这两个：
-rm -rf html/ctc/storage/cache/metadata/* html/ctc/storage/cache/annotations/*
-```
-> 💡 开发期可把 `config/config.php` 的 `$config['env'] = 'pro'` 改为 `'dev'`，能直接在页面看到报错详情（改完记得改回 pro）。
+### 修改 Volt 模板
 
-### 场景 3：改静态 JS/CSS
-即时生效，但 URL 带 `?v=202004080830` 版本号会被浏览器缓存：
-- 临时：浏览器硬刷新（Cmd+Shift+R）
-- 正式：改 `config/config.php` 的 `static_version`（如改为当前日期）全站自动失效缓存
-
-### 场景 4：数据库变更
-```bash
-# 1) 生成迁移文件（会创建 db/migrations/新时间戳.php，编辑它的 up/down 方法）
-docker exec -it ctc-php sh -c 'cd /var/www/html/ctc && vendor/bin/phinx create AddXxx'
-# 2) 手工编辑迁移文件后执行
-docker exec -it ctc-php sh -c 'cd /var/www/html/ctc && vendor/bin/phinx migrate'
-# 3) 同步修改 app/Models/ 下对应模型，并清 metadata 缓存（见场景 2）
-```
-> 改库前建议备份：`docker exec ctc-mysql sh -c 'mysqldump -uctc -p"密码" ctc' > backup.sql`
-
-### 场景 5：websocket / 定时任务 / composer 依赖
-```bash
-# 改了 websocket/ 或 composer.json 后：
-docker compose restart php                        # supervisor 会自动拉起 websocket
-docker exec ctc-php sh -c 'cd /var/www/html/ctc && composer install'   # 加了新依赖包时
-docker exec ctc-php php /var/www/html/ctc/console.php --task=course_index --action=rebuild  # 搜索字段变更后重建索引
-```
-
-### 场景 6：整站镜像级变更（改 Dockerfile / nginx 配置）
-```bash
-docker compose up -d --build        # 才需要重新构建
-```
-
-## 五、推荐的一轮二开闭环（示例：给课程列表页加个自定义筛选）
+Phalcon 不会自动检测模板变更，需要清理编译缓存：
 
 ```bash
-cd /Users/admin/Desktop/Item/class/html/ctc
-
-# 1. 后端：改数据查询
-vim app/Http/Home/Controllers/CourseController.php   # 调整 listAction / 注解路由
-vim app/Repos/Course.php                             # 加查询条件
-
-# 2. 前端：改模板 + 样式
-vim app/Http/Home/Views/course/list.volt
-vim public/static/home/css/content.css
-
-# 3. 清缓存 + 验证
-rm -rf storage/cache/volt/*
-curl -s -o /dev/null -w '%{http_code}\n' -H 'Host: ctc.docker' http://127.0.0.1/course/list
-
-# 4. 满意后提交到自己的 git 仓库（该目录本身就是 gitee 仓库的克隆，建议 fork 后改 remote）
-git add -A && git commit -m "feat: 自定义课程筛选"
+rm -rf html/ctc/storage/cache/volt/*
 ```
 
-## 六、注意事项
+修改模型字段或关联后，同时清理元数据和注解缓存：
 
-1. **`vendor/` 永远不要直接改**——需要改第三方包行为时用 composer fork + 仓库替换。
-2. **`storage/` 里的文件都是生成物**，随时可清空重建（log 除外，看问题用）。
-3. 每分钟有定时任务在跑（订单关闭、学习同步等），**调试相关 Task 时**可直接手动触发：`docker exec ctc-php php console.php --task=close_order --action=main`，避免等 cron。
-4. 建议先 **fork gitee 的 course-tencent-cloud 仓库**再改 remote，方便后续合并官方升级；本地已有 `core.fileMode=false` 配置，macOS 权限位不会污染 diff。
-5. 配置里 `websocket.connect_address` 当前是 `ctc.docker:8282`，若日后换域名/部署到服务器，记得同步改 `config/config.php` 和 nginx 的 `server_name`。
+```bash
+rm -rf html/ctc/storage/cache/metadata/* \
+       html/ctc/storage/cache/annotations/*
+```
 
+### 修改静态资源
+
+静态资源 URL 带 `APP_STATIC_VERSION` 版本号。发布时更新该值可使浏览器缓存失效。
+
+### 数据库迁移
+
+```bash
+docker compose exec -T -w /var/www/html/ctc php \
+  php vendor/bin/phinx create AddYourMigration
+```
+
+编辑 `html/ctc/db/migrations/` 下生成的迁移文件，然后执行：
+
+```bash
+docker compose exec -T -w /var/www/html/ctc php \
+  php vendor/bin/phinx migrate -c phinx.php
+```
+
+---
+
+## 生产发布
+
+发布前先备份：
+
+```bash
+./backup.sh
+```
+
+标准发布：
+
+```bash
+./reload-prod.sh
+```
+
+脚本会依次执行：
+
+1. `git pull --ff-only`
+2. 构建 PHP 8.2 镜像
+3. 重建 / 启动 PHP 服务
+4. 首次 Phalcon 5 切换时清理旧 Redis 业务缓存
+5. `composer install --no-dev`
+6. Phinx 迁移与 `console.php upgrade`
+7. 清理 Volt / metadata / annotations 缓存
+8. 重启 PHP-FPM 与 WebSocket
+9. 重载 Nginx
+10. 重建首页缓存
+
+仅验证本地改动、不拉代码：
+
+```bash
+SKIP_GIT_PULL=1 ./reload-prod.sh
+```
+
+> 发布脚本应由仓库目录的属主用户执行，不要用 root 拉取代码，否则 `.git` 会混入 root 属主文件，后续普通用户无法写入。
+>
+> 如果误用 root 执行过 `git fetch` / `git pull`：
+>
+> ```bash
+> sudo chown -R <deploy-user>:<deploy-group> .git
+> ```
+
+---
+
+## 安全与隐私
+
+- `.env`、`nginx/conf.d/*.conf`、`nginx/ssl/`、日志、上传文件、备份目录均已加入 `.gitignore`
+- 不要在 README、Issue、截图、日志或提交信息中粘贴真实域名、IP、账号、密码、AccessKey、证书私钥
+- 生产环境必须使用 HTTPS，并限制后台、SSH、数据库、Redis、WebSocket 的访问来源
+- `APP_INFO_SYNC_URL` 默认关闭；启用后会向配置的第三方接口上报站点主机信息，请先评估隐私影响
+- 初始管理员密码不再使用固定默认值；首次迁移请设置 `ADMIN_PASSWORD` 或保存随机生成的密码
+- 定期轮换 `APP_KEY`、数据库密码、Redis 密码、短信 AccessKey 和证书
+- 发布账号建议使用只读 Deploy Key 或最小权限账号；不要复用个人主账号密钥
+
+---
+
+## 相关文档
+
+- [账号自动注册与密码设置](docs/account-auth-auto-register.md)
+- [点播播放票据与防盗链](docs/vod-playback-protection-a1.md)
+- [SSL 证书维护（acme.sh）](SSL-ACME.md)
+- [Kubernetes 迁移蓝图](k8s-blueprint.md)
+- [安全日志查询](docs/security-log-guide.md)
+
+---
+
+## 许可证
+
+本项目基于 GPL-2.0 许可证发布，详见 [LICENSE](LICENSE)。
+
+上游项目：[酷瓜云课堂](https://gitee.com/koogua/course-tencent-cloud)。

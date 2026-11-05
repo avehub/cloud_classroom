@@ -21,7 +21,7 @@
 
 | 层次/模块 | 技术选型 | 说明 |
 |---|---|---|
-| **后端框架** | Phalcon 3.4 (PHP 7.3, C扩展) | 架构分层：Controller (注解路由) → Repos → Models |
+| **后端框架** | PHP 8.2.35 + Phalcon 5.23 (C扩展) | 架构分层：Controller (注解路由) → Repos → Models |
 | **模板引擎** | Volt 模板引擎 | 编译产物缓存在 `html/ctc/storage/cache/volt/` |
 | **前端体系** | Layui + jQuery + 原生 JS/CSS | 服务端渲染，无独立前端构建工程 |
 | **数据库/存储** | MySQL 5.7 + Redis | 数据库迁移采用 Phinx；Redis 用于缓存/Session |
@@ -152,3 +152,14 @@ Agent 在进行任何需求开发、缺陷修复或功能调整时，必须严�
 4. 首次从 Phalcon 3 切到 5 时，`reload-prod.sh` 会清理一次 Redis 业务库（日志会提示），完成后写入 `.phalcon5-cutover-done`，后续不再重复清理。
 5. 生产 `.env`、后台配置、上传目录不在 git 中，发布时不得覆盖。
 6. 回退时部署上一个镜像/commit，并在需要时把 `kg_vip.expiry=0` 的永久会员先置为 `published=0`。
+
+---
+
+## 7. 开源仓库隐私与配置收口
+
+1. 真实域名、服务器 IP、主机名、部署用户、内部目录、账号、邮箱、手机号、数据库/Redis 密码、AccessKey、证书私钥、客户数据，不得写入 `README.md`、示例配置、代码注释或提交信息。
+2. 公开文档统一使用占位符，例如 `class.example.com`、`<server-ip>`、`/opt/cloud_classroom`、`<deploy-user>`。
+3. 敏感运行配置只放在 `.env`、`nginx/conf.d/*.conf`、`nginx/ssl/`、`storage/`、日志和备份目录；这些路径必须保持在 `.gitignore` 中。
+4. 内部安全审计、应急演练、生产执行日志和一次性运维脚本放到 `.internal/`，不要提交到公开仓库。
+5. 应用信息上报（`APP_INFO_SYNC_URL`）默认关闭；启用前必须确认第三方接口的隐私影响。
+6. 首次安装管理员密码通过 `ADMIN_EMAIL` / `ADMIN_PASSWORD` 配置；未配置时迁移会生成随机密码，禁止恢复固定默认密码。
