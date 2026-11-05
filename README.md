@@ -267,24 +267,32 @@ docker compose exec -T -w /var/www/html/ctc php \
 ./backup.sh
 ```
 
+部署前只做配置预检，不构建、不启动、不拉代码：
+
+```bash
+PREFLIGHT_ONLY=1 ./reload-prod.sh
+```
+
 标准发布：
 
 ```bash
 ./reload-prod.sh
 ```
 
-脚本会依次执行：
+`reload-prod.sh` 会依次执行：
 
-1. `git pull --ff-only`
-2. 构建 PHP 8.2 镜像
-3. 重建 / 启动 PHP 服务
-4. 首次 Phalcon 5 切换时清理旧 Redis 业务缓存
-5. `composer install --no-dev`
-6. Phinx 迁移与 `console.php upgrade`
-7. 清理 Volt / metadata / annotations 缓存
-8. 重启 PHP-FPM 与 WebSocket
-9. 重载 Nginx
-10. 重建首页缓存
+1. 检查 `.env` 必填项，拒绝占位符配置
+2. `git pull --ff-only --prune`
+3. 构建 PHP 8.2 镜像
+4. 重建 / 启动 PHP 服务
+5. 首次 Phalcon 5 切换时清理旧 Redis 业务缓存
+6. `composer install --no-dev`
+7. Phinx 迁移与 `console.php upgrade`
+8. 清理 Volt / metadata / annotations 缓存
+9. 重启 PHP-FPM 与 WebSocket
+10. 重载 Nginx
+11. 重建首页缓存
+12. 执行 `/health` 健康检查并输出容器状态
 
 仅验证本地改动、不拉代码：
 
@@ -292,13 +300,30 @@ docker compose exec -T -w /var/www/html/ctc php \
 SKIP_GIT_PULL=1 ./reload-prod.sh
 ```
 
-> 发布脚本应由仓库目录的属主用户执行，不要用 root 拉取代码，否则 `.git` 会混入 root 属主文件，后续普通用户无法写入。
+如果使用占位符 `.env` 仅做本地脚本验证：
+
+```bash
+ALLOW_PLACEHOLDER_ENV=1 SKIP_GIT_PULL=1 ./reload-prod.sh
+```
+
+> 发布脚本应由仓库目录的属主用户执行，默认拒绝 root。确需 root 时显式设置 `ALLOW_ROOT=1`，但不推荐。
 >
 > 如果误用 root 执行过 `git fetch` / `git pull`：
 >
 > ```bash
 > sudo chown -R <deploy-user>:<deploy-group> .git
 > ```
+
+### 根目录脚本说明
+
+| 脚本 | 用途 |
+|---|---|
+| `reload-prod.sh` | 标准增量发布：配置预检、拉代码、构建、迁移、清缓存、重启、健康检查 |
+| `deploy-prod.sh` | 首次部署 / 自愈：检查 `.env` 与 Nginx 配置、初始化目录、构建启动、迁移、重建索引 |
+| `backup.sh` | 备份 MySQL、Redis、上传文件、`.env` 与配置，并生成版本清单 |
+| `get-docker.sh` | Docker 官方安装脚本，通常无需修改 |
+
+`deploy-prod.sh` 需要先准备 `nginx/conf.d/default.conf`；缺少该文件时会直接报错，并提示从 `nginx/conf.d/*.sample` 复制。
 
 ---
 

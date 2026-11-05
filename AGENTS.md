@@ -153,6 +153,8 @@ Agent 在进行任何需求开发、缺陷修复或功能调整时，必须严�
 5. 生产 `.env`、后台配置、上传目录不在 git 中，发布时不得覆盖。
 6. 回退时部署上一个镜像/commit，并在需要时把 `kg_vip.expiry=0` 的永久会员先置为 `published=0`。
 
+7. `reload-prod.sh` / `deploy-prod.sh` 默认校验 `.env` 必填项并拒绝占位符；`reload-prod.sh` 默认拒绝 root。`PREFLIGHT_ONLY=1` 可只做发布前预检；不要在生产用 `ALLOW_ROOT=1` 或 `ALLOW_PLACEHOLDER_ENV=1` 绕过检查。
+
 ---
 
 ## 7. 开源仓库隐私与配置收口

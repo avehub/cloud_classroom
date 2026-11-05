@@ -31,8 +31,37 @@ mkdir -p "${TARGET_DIR}"
 
 get_env() {
     local key="$1"
-    awk -F= -v k="${key}" '$1 == k { sub(/^[^=]*=/, ""); gsub(/^"|"$/, ""); print; exit }' "${SCRIPT_DIR}/.env"
+    awk -F= -v k="${key}" '
+        $1 == k {
+            sub(/^[^=]*=/, "");
+            gsub(/\r/, "");
+            gsub(/^[ \t]+|[ \t]+$/, "");
+            gsub(/^"|"$/, "");
+            print;
+            exit
+        }
+    ' "${SCRIPT_DIR}/.env"
 }
+
+is_placeholder() {
+    case "$1" in
+        ""|*change_me*|*yourdomain.com*|*your_domain.com*)
+            return 0
+            ;;
+    esac
+    return 1
+}
+
+MYSQL_DATABASE="$(get_env MYSQL_DATABASE)"
+MYSQL_DATABASE="${MYSQL_DATABASE:-ctc}"
+
+for key in MYSQL_ROOT_PASSWORD MYSQL_PASSWORD REDIS_PASSWORD; do
+    value="$(get_env "${key}")"
+    if is_placeholder "${value}"; then
+        echo "[ERROR] ${key} 未配置或仍是占位符，拒绝生成不完整备份。"
+        exit 1
+    fi
+done
 
 container_running() {
     local name="$1"
@@ -86,7 +115,9 @@ if container_running "${REDIS_CONTAINER}"; then
 
     for _ in $(seq 1 30); do
         progress="$(redis_cli INFO persistence 2>/dev/null | tr -d '\r' | awk -F: '/rdb_bgsave_in_progress/{print $2}')"
-        [ "${progress:-1}" = "0" ] && break
+        if [ "${progress:-1}" = "0" ]; then
+            break
+        fi
         sleep 1
     done
 
@@ -115,7 +146,9 @@ fi
 echo "[INFO] 4. 正在归档配置..."
 CONFIG_FILES=()
 for path in .env docker-compose.yml nginx/conf.d php/conf.d php/supervisor/conf.d redis/redis.conf; do
-    [ -e "${SCRIPT_DIR}/${path}" ] && CONFIG_FILES+=("${path}")
+    if [ -e "${SCRIPT_DIR}/${path}" ]; then
+        CONFIG_FILES+=("${path}")
+    fi
 done
 
 if [ ${#CONFIG_FILES[@]} -gt 0 ]; then
@@ -129,9 +162,12 @@ fi
 echo "[INFO] 5. 正在生成发布清单..."
 MIGRATION_VERSION="unknown"
 if container_running "${MYSQL_CONTAINER}"; then
-    MIGRATION_VERSION="$(docker exec -e MYSQL_PWD="$(get_env MYSQL_ROOT_PASSWORD)" -i "${MYSQL_CONTAINER}" sh -c '
+    MIGRATION_VERSION="$(docker exec \
+        -e MYSQL_PWD="$(get_env MYSQL_ROOT_PASSWORD)" \
+        -e MYSQL_DATABASE="${MYSQL_DATABASE}" \
+        -i "${MYSQL_CONTAINER}" sh -c '
         mysql -uroot -N -e \
-        "SELECT MAX(version) FROM \`${MYSQL_DATABASE}\`.kg_migration" 2>/dev/null
+        "SELECT MAX(version) FROM \`$MYSQL_DATABASE\`.kg_migration" 2>/dev/null
     ' || echo unknown)"
 fi
 
