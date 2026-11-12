@@ -1,12 +1,18 @@
-# PHP 运行时基线（由 reload-prod.sh 在每次发布后自动比对）
+# PHP 运行时基线（reload-prod.sh 每次发布后自动与容器内实际版本比对）
 #
-# 用途：pecl 扩展与基础镜像目前都未锁版本，重建镜像可能悄悄升级运行时。
-#       发布后脚本会读取容器内实际版本与本文件第一行比对，不一致就告警。
-# 更新方式：确认新版本可用后，把下面这行替换为脚本打印的实际值并提交。
+# 更新方式：确认新版本可用后，把最后这行数据替换为脚本打印的实际值并提交。
 #
-# 真要钉死版本（需维护窗口，会触发 Phalcon 重新编译，生产内存紧张时可能失败）：
+# 版本锁定现状（见 php/Dockerfile）：
 #   FROM php:8.2.35-fpm-bookworm
-#   && pecl install psr-1.2.0 redis-6.3.0 igbinary-3.2.16 phalcon-5.23.0
-#   注意 igbinary 现网是 3.2.17RC1，钉 3.2.16 属于降级，需验证 redis 扩展的
-#   igbinary 序列化读写兼容（建议先在测试环境跑一遍缓存读写与 session）。
-php=8.2.35 phalcon=5.23.0 redis=6.3.0 igbinary=3.2.17RC1 psr=1.2.0
+#   pecl install psr-1.2.0 redis-6.3.0 igbinary-3.2.16 phalcon-5.23.0
+#   COPY --from=composer:2.10.3
+#   apt 包与 Debian 基础层仍随 tag 浮动（钉 apt 精确版本会因镜像源轮转而构建失败，故不钉）
+#
+# 变更记录：
+#   2026-11-12  igbinary 3.2.17RC1 -> 3.2.16（钉版本时从 RC 回到稳定版）。
+#               已实测向后兼容：旧扩展写入 Redis 的 igbinary 数据（中文/嵌套结构、
+#               App\Caches\Course 业务缓存、Phalcon Redis 模型元数据）能被 3.2.16
+#               完整读出且 payload md5 一致，因此切换镜像无需清空 Redis。
+#   2026-11-12  镜像改为异地构建交付（Apple Silicon + Rosetta 构建 amd64，实测 9.3 分钟），
+#               生产不再执行 pecl 编译。
+php=8.2.35 phalcon=5.23.0 redis=6.3.0 igbinary=3.2.16 psr=1.2.0

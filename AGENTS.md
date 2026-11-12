@@ -151,8 +151,16 @@ Agent 在进行任何需求开发、缺陷修复或功能调整时，必须严�
 3. 发布统一使用 `./reload-prod.sh`，流程为：预检（`.env` / cron.d 属主 / `docker compose config`）→ `git pull` → **代码权限归一** → **按需**构建 php 镜像 → `up -d php` → **按需** `composer install` → `phinx migrate` → `console.php upgrade`（console 迁移 + 重置 app_info/setting/annotation/metadata/volt/nav 缓存，失败即中止）→ 清理 volt 编译产物 → 重启 FPM/WebSocket → `nginx -t` + `nginx -s reload`（零停机）→ 重建首页缓存 → 健康检查 → 写入 `.last-deployed-commit`。
 4. **增量发布**：脚本用 `.last-deployed-commit` 与 `git diff` 判断输入是否变化。只有 `php/Dockerfile` 变化才重建镜像，只有 `composer.json` / `composer.lock` 变化才重装依赖 —— 因为 `html/`、`php/conf.d/*`、`php/fpm/*`、`php/cron.d/*`、`php/supervisor/conf.d` 全是 bind mount，改它们不需要重建镜像。开关：`REBUILD_PHP=1`、`SKIP_PHP_BUILD=1`、`FORCE_COMPOSER=1`、`SKIP_COMPOSER=1`、`SKIP_GIT_PULL=1`、`PREFLIGHT_ONLY=1`。首次运行（无 `.last-deployed-commit`）按全量处理。
 5. ⚠️ 发布脚本里**禁止 `umask 077`**：`git pull` 用它决定新文件权限，会把 PHP 源码写成 `0600`，而 php-fpm 与容器内 cron 都以 `www-data` 运行 → 页面 500/302、定时任务报 `handler class cannot be loaded`；又因 `opcache.validate_timestamps=0`，故障往往要等到 fpm 重启后才暴露。脚本已在 pull 后做权限归一（`chmod -R a+rX`）兜底，`.env` 用显式 `chmod 600` 保护。**也不要用递归 `chown`/`chmod` 去"修权限"**——那会顺手把 `php/cron.d/course` 的 root 属主改掉（见第 11 条），代价是全部定时任务静默停摆。
-6. `php/Dockerfile` 中 `pecl install phalcon / redis / igbinary / psr` 与 `FROM php:8.2-fpm-bookworm` **均未锁版本**（唯一钉死的是 `COPY --from=composer:2.10.3`）：任何触及 apt/pecl 层的改动都会触发扩展重新编译（生产 2C、可用内存不足 2G 时耗时 10 分钟以上且可能失败），并可能悄悄升级运行时（现网 igbinary 已漂移到 `3.2.17RC1`）。因此：时区这类轻量配置必须放在 Dockerfile **末尾单独一层**；要钉扩展版本请单独安排维护窗口重建，不要混在常规发布里。
-7. 作为未锁版本的补偿，运行时基线记录在 `php/runtime-versions.lock`（当前 `php=8.2.35 phalcon=5.23.0 redis=6.3.0 igbinary=3.2.17RC1 psr=1.2.0`）。`reload-prod.sh` 每次发布后会读取容器内实际版本与之比对，不一致即告警——确认新版本可用后再更新该文件并提交。真正钉版本时用：`FROM php:8.2.35-fpm-bookworm` + `pecl install psr-1.2.0 redis-6.3.0 igbinary-3.2.16 phalcon-5.23.0`（igbinary 从 RC 降到稳定版，需先验证 redis 缓存与 session 的序列化读写）。
+6. `php/Dockerfile` 已锁定运行时版本：`FROM php:8.2.35-fpm-bookworm` + `pecl install psr-1.2.0 redis-6.3.0 igbinary-3.2.16 phalcon-5.23.0`（apt 包与 Debian 基础层仍随 tag 浮动，钉 apt 精确版本会因镜像源轮转导致构建失败，故不钉）。**改动该文件任意一层都会触发扩展重新编译**：Apple Silicon + Rosetta 构建 amd64 实测约 9.3 分钟；生产 2C / 可用内存不足 2G，**禁止在生产直接 `docker compose build`**，改为异地构建后导入：
+   ```bash
+   docker buildx build --provenance=false --sbom=false --platform linux/amd64 -t ctc/php:8.2-pinned-amd64 --load php/
+   docker save ctc/php:8.2-pinned-amd64 | gzip > ctc-php-8.2-pinned-amd64.tar.gz
+   # 服务器端：
+   gunzip -c ctc-php-8.2-pinned-amd64.tar.gz | docker load
+   docker tag ctc/php:8.2 ctc/php:rollback-$(date +%Y%m%d%H%M)   # 先留退路
+   docker tag ctc/php:8.2-pinned-amd64 ctc/php:8.2 && docker compose up -d php
+   ```
+7. 运行时基线记录在 `php/runtime-versions.lock`，`reload-prod.sh` 步骤 4.1 会在每次发布后读取容器内实际版本与之比对，不一致即告警（确认无误后再更新该文件并提交）。igbinary 从 `3.2.17RC1` 降到 `3.2.16` 已实测兼容：旧扩展写入 Redis 的数据（含 `App\Caches\*` 业务缓存与 Phalcon Redis 模型元数据，序列化器均为 `Igbinary`）可被新版本完整读出、payload md5 一致，**切换镜像无需清空 Redis**。
 8. 生产 `.env`、后台配置、上传目录不在 git 中，发布时不得覆盖。
 9. 回退时部署上一个镜像/commit，并在需要时把 `kg_vip.expiry=0` 的永久会员先置为 `published=0`。镜像回退用构建前自动打的 `ctc/php:rollback-<时间戳>` 标签：`docker tag <rollback-tag> ctc/php:8.2 && docker compose up -d php`。
 10. `reload-prod.sh` / `deploy-prod.sh` 默认校验 `.env` 必填项并拒绝占位符；`reload-prod.sh` 默认拒绝 root。`PREFLIGHT_ONLY=1` 可只做发布前预检；不要在生产用 `ALLOW_ROOT=1` 或 `ALLOW_PLACEHOLDER_ENV=1` 绕过检查。
