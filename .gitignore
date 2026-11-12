@@ -59,8 +59,10 @@
 /php82/log/
 /php82/supervisor/log/
 
-# one-time PHP 8.2 cutover marker
+# one-time PHP 8.2 cutover marker（历史遗留，reload-prod.sh 已不再使用）
 /.phalcon5-cutover-done
+# reload-prod.sh 记录的已部署 commit，用于增量判断
+/.last-deployed-commit
 
 # Private/internal operational documents and local tooling
 /.internal/
