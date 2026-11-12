@@ -153,6 +153,29 @@ fi
 echo "==> 4. 启动/重建 PHP 服务..."
 docker compose up -d php
 
+echo "==> 4.1 校验 PHP 运行时版本基线..."
+# pecl 扩展与基础镜像都未锁版本：重建镜像可能悄悄换掉 Phalcon/redis/igbinary。
+# 这里把实际版本与 php/runtime-versions.lock 比对，让漂移从"静默"变成"可见"。
+RUNTIME_LOCK="php/runtime-versions.lock"
+RUNTIME_ACTUAL="$(docker compose exec -T php php -r 'printf("php=%s phalcon=%s redis=%s igbinary=%s psr=%s", PHP_VERSION, phpversion("phalcon"), phpversion("redis"), phpversion("igbinary"), phpversion("psr"));' 2>/dev/null | tr -d '\r\n' || true)"
+
+if [ -z "${RUNTIME_ACTUAL}" ]; then
+  warn "未能读取容器内扩展版本，跳过基线校验。"
+else
+  info "运行时：${RUNTIME_ACTUAL}"
+  if [ -f "${RUNTIME_LOCK}" ]; then
+    RUNTIME_EXPECTED="$(grep -v '^[[:space:]]*#' "${RUNTIME_LOCK}" | grep -v '^[[:space:]]*$' | head -1 | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    if [ -n "${RUNTIME_EXPECTED}" ] && [ "${RUNTIME_ACTUAL}" != "${RUNTIME_EXPECTED}" ]; then
+      warn "运行时版本与基线不一致（镜像重建可能升级了扩展）："
+      warn "  基线: ${RUNTIME_EXPECTED}"
+      warn "  实际: ${RUNTIME_ACTUAL}"
+      warn "确认新版本可用后，请更新 ${RUNTIME_LOCK} 并提交。"
+    fi
+  else
+    warn "缺少 ${RUNTIME_LOCK}，无法比对运行时基线。"
+  fi
+fi
+
 echo "==> 5. Composer 依赖（仅在 composer.json/lock 变化时安装）..."
 if [ "${SKIP_COMPOSER:-0}" = "1" ]; then
   warn "SKIP_COMPOSER=1，已跳过 composer install；依赖变更本次不会生效。"

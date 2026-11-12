@@ -1,0 +1,12 @@
+# PHP 运行时基线（由 reload-prod.sh 在每次发布后自动比对）
+#
+# 用途：pecl 扩展与基础镜像目前都未锁版本，重建镜像可能悄悄升级运行时。
+#       发布后脚本会读取容器内实际版本与本文件第一行比对，不一致就告警。
+# 更新方式：确认新版本可用后，把下面这行替换为脚本打印的实际值并提交。
+#
+# 真要钉死版本（需维护窗口，会触发 Phalcon 重新编译，生产内存紧张时可能失败）：
+#   FROM php:8.2.35-fpm-bookworm
+#   && pecl install psr-1.2.0 redis-6.3.0 igbinary-3.2.16 phalcon-5.23.0
+#   注意 igbinary 现网是 3.2.17RC1，钉 3.2.16 属于降级，需验证 redis 扩展的
+#   igbinary 序列化读写兼容（建议先在测试环境跑一遍缓存读写与 session）。
+php=8.2.35 phalcon=5.23.0 redis=6.3.0 igbinary=3.2.17RC1 psr=1.2.0
