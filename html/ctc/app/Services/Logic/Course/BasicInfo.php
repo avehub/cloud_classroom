@@ -4,6 +4,7 @@
 namespace App\Services\Logic\Course;
 
 use App\Models\Course as CourseModel;
+use App\Models\CourseRating as CourseRatingModel;
 use App\Repos\Course as CourseRepo;
 use App\Services\Category as CategoryService;
 use App\Services\Logic\CourseTrait;
@@ -65,11 +66,19 @@ class BasicInfo extends LogicService
 
         $rating = $repo->findCourseRating($course->id);
 
+        /**
+         * 历史数据可能缺失评分记录，直接取属性会得到 null 并显示成 0.0 分；
+         * 这里回落到模型默认值（满分），与其它未评价课程的表现保持一致。
+         */
+        if (!$rating) {
+            $rating = new CourseRatingModel();
+        }
+
         return [
-            'rating' => round($rating->rating, 1),
-            'rating1' => round($rating->rating1, 1),
-            'rating2' => round($rating->rating2, 1),
-            'rating3' => round($rating->rating3, 1),
+            'rating' => round((float)$rating->rating, 1),
+            'rating1' => round((float)$rating->rating1, 1),
+            'rating2' => round((float)$rating->rating2, 1),
+            'rating3' => round((float)$rating->rating3, 1),
         ];
     }
 

@@ -4,6 +4,7 @@
 namespace App\Services;
 
 use App\Models\Course as CourseModel;
+use App\Models\CourseRating as CourseRatingModel;
 use App\Repos\Course as CourseRepo;
 use App\Repos\CourseRating as CourseRatingRepo;
 
@@ -42,14 +43,34 @@ class CourseStat extends Service
 
         $course = $courseRepo->findById($courseId);
 
+        if (!$course) return;
+
         $courseRatingRepo = new CourseRatingRepo();
 
-        $courseRating = $courseRatingRepo->findByCourseId($course->id);
+        /**
+         * 评分记录缺失时补建，避免在 bool 上赋值触发致命错误
+         */
+        $courseRating = $courseRatingRepo->findOrCreateByCourseId($course->id);
 
-        $courseRating->rating = $courseRatingRepo->averageRating($course->id);
-        $courseRating->rating1 = $courseRatingRepo->averageRating1($course->id);
-        $courseRating->rating2 = $courseRatingRepo->averageRating2($course->id);
-        $courseRating->rating3 = $courseRatingRepo->averageRating3($course->id);
+        if (!$courseRating) return;
+
+        $reviewCount = $courseRatingRepo->countPublishedReviews($course->id);
+
+        if ($reviewCount > 0) {
+            $courseRating->rating = $courseRatingRepo->averageRating($course->id);
+            $courseRating->rating1 = $courseRatingRepo->averageRating1($course->id);
+            $courseRating->rating2 = $courseRatingRepo->averageRating2($course->id);
+            $courseRating->rating3 = $courseRatingRepo->averageRating3($course->id);
+        } else {
+            /**
+             * 没有已发布评价时，average() 返回 null 会被强转成 0，
+             * 把课程评分清成 0.0；此时回落到默认满分。
+             */
+            $courseRating->rating = CourseRatingModel::DEFAULT_RATING;
+            $courseRating->rating1 = CourseRatingModel::DEFAULT_RATING;
+            $courseRating->rating2 = CourseRatingModel::DEFAULT_RATING;
+            $courseRating->rating3 = CourseRatingModel::DEFAULT_RATING;
+        }
 
         $courseRating->update();
 

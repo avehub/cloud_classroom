@@ -4,12 +4,18 @@
 namespace App\Console\Tasks;
 
 use App\Models\Chapter as ChapterModel;
+use App\Models\Course as CourseModel;
 use App\Repos\Chapter as ChapterRepo;
 use App\Services\CourseStat as CourseStatService;
 use App\Services\Vod as VodService;
 
 class VodEventTask extends Task
 {
+
+    /**
+     * 单次最多同步的课时数量，避免任务长时间占用与点播接口限流
+     */
+    const SCAN_LIMIT = 50;
 
     public function mainAction()
     {
@@ -24,72 +30,123 @@ class VodEventTask extends Task
         $chapterRepo = new ChapterRepo();
         $vodService = new VodService();
 
-        // 查找时长为0且未删除的课时 (最多每次同步20条，避免堆积)
-        $chapters = ChapterModel::find([
-            'conditions' => 'deleted = 0 AND model = 1',
-            'order' => 'id DESC',
-            'limit' => 50,
-        ]);
+        $chapters = $this->findChaptersNeedingSync();
 
         foreach ($chapters as $chapter) {
-            $attrs = $chapter->attrs;
-            $duration = $attrs['duration'] ?? 0;
-            $status = $attrs['file']['status'] ?? '';
 
-            if ($duration > 0 && $status == ChapterModel::FS_TRANSLATED) {
-                continue;
+            /**
+             * 单个课时失败不能中断整批，否则排在其后的课时永远得不到修复
+             */
+            try {
+                $this->syncChapter($chapter, $chapterRepo, $vodService);
+            } catch (\Throwable $e) {
+                $this->errorPrint("课时#{$chapter->id} 同步点播信息失败: {$e->getMessage()}");
             }
+        }
+    }
 
-            // 如果该课时已被标记为失败(例如视频在火山端不存在或已删除)，跳过后续循环避免反复请求报错
-            if ($status == ChapterModel::FS_FAILED) {
-                continue;
-            }
+    /**
+     * 筛出真正需要兜底同步的点播课时
+     *
+     * 不再按 id 倒序盲扫最近 50 条：课时一旦滑出窗口就永远得不到修复，
+     * 课程时长会一直停留在 0。这里在 SQL 层直接筛出待修复记录并按 id 正序处理，
+     * 保证存量积压也能逐步清零。
+     *
+     * @return \Phalcon\Mvc\Model\ResultsetInterface|\Phalcon\Mvc\Model\Resultset|ChapterModel[]
+     */
+    protected function findChaptersNeedingSync()
+    {
+        $translatedLike = '%"status":"' . ChapterModel::FS_TRANSLATED . '"%';
+        $failedLike = '%"status":"' . ChapterModel::FS_FAILED . '"%';
+        $pendingLike = '%"status":"' . ChapterModel::FS_PENDING . '"%';
+        $zeroDurationLike = '%"duration":0%';
 
-            $vod = $chapterRepo->findChapterVod($chapter->id);
-            if (!$vod || empty($vod->file_id)) {
-                continue;
-            }
+        return ChapterModel::query()
+            ->where('deleted = 0 AND model = :model:', ['model' => CourseModel::MODEL_VOD])
+            // 已标记失败的课时不再轮询，避免反复请求报错与日志刷屏
+            ->andWhere('attrs NOT LIKE :failed:', ['failed' => $failedLike])
+            // 还没上传过视频的课时无从查询，不占用扫描额度（章级记录 attrs 为 []）
+            ->andWhere('attrs NOT LIKE :pending:', ['pending' => $pendingLike])
+            ->andWhere('attrs LIKE :has_file:', ['has_file' => '%"file"%'])
+            // 仅保留“未转码完成”或“时长仍为 0”的课时
+            ->andWhere('(attrs NOT LIKE :translated: OR attrs LIKE :zero_duration:)', [
+                'translated' => $translatedLike,
+                'zero_duration' => $zeroDurationLike,
+            ])
+            ->orderBy('id ASC')
+            ->limit(self::SCAN_LIMIT)
+            ->execute();
+    }
 
-            $fileId = $vod->file_id;
+    /**
+     * 同步单个课时的点播元数据与转码流
+     *
+     * @param ChapterModel $chapter
+     * @param ChapterRepo $chapterRepo
+     * @param VodService $vodService
+     * @return void
+     */
+    protected function syncChapter(ChapterModel $chapter, ChapterRepo $chapterRepo, VodService $vodService)
+    {
+        $attrs = $chapter->attrs;
+        $duration = $attrs['duration'] ?? 0;
+        $status = $attrs['file']['status'] ?? '';
 
-            // 1. 获取源片媒体信息：同时判定视频在火山端是否还存在，并顺带补齐时长
-            $state = $vodService->getMediaState($fileId);
+        if ($duration > 0 && $status == ChapterModel::FS_TRANSLATED) {
+            return;
+        }
 
-            if ($state['exists'] === false) {
-                // 视频已删除或上传未提交成功，标记失败以终止无休止轮询与错误日志刷屏
-                $attrs['file']['status'] = ChapterModel::FS_FAILED;
-                $chapter->attrs = $attrs;
-                $chapter->update();
+        // 如果该课时已被标记为失败(例如视频在火山端不存在或已删除)，跳过后续请求
+        if ($status == ChapterModel::FS_FAILED) {
+            return;
+        }
 
-                $this->updateCourseVodAttrs($chapter->course_id);
+        $vod = $chapterRepo->findChapterVod($chapter->id);
 
-                $this->errorPrint("课时#{$chapter->id} 视频(Vid={$fileId})在火山端不存在，已标记为转码失败");
+        if (!$vod || empty($vod->file_id)) {
+            return;
+        }
 
-                continue;
-            }
+        $fileId = $vod->file_id;
 
-            if ($duration == 0 && !empty($state['source']['Duration'])) {
-                $attrs['duration'] = (int)$state['source']['Duration'];
-            }
+        // 1. 获取源片媒体信息：同时判定视频在火山端是否还存在，并顺带补齐时长
+        $state = $vodService->getMediaState($fileId);
 
-            // 2. 获取转码播放流
-            $transcodes = $vodService->getFileTranscode($fileId);
-            if (!empty($transcodes)) {
-                $vod->file_transcode = $transcodes;
-                $vod->update();
-                $attrs['file']['status'] = ChapterModel::FS_TRANSLATED;
-                if (empty($attrs['duration']) && !empty($transcodes[0]['duration'])) {
-                    $attrs['duration'] = (int)$transcodes[0]['duration'];
-                }
-            } elseif (!empty($attrs['duration'])) {
-                $attrs['file']['status'] = ChapterModel::FS_TRANSLATING;
-            }
-
+        if ($state['exists'] === false) {
+            // 视频已删除或上传未提交成功，标记失败以终止无休止轮询与错误日志刷屏
+            $attrs['file']['status'] = ChapterModel::FS_FAILED;
             $chapter->attrs = $attrs;
             $chapter->update();
 
             $this->updateCourseVodAttrs($chapter->course_id);
+
+            $this->errorPrint("课时#{$chapter->id} 视频(Vid={$fileId})在火山端不存在，已标记为转码失败");
+
+            return;
         }
+
+        if ($duration == 0 && !empty($state['source']['Duration'])) {
+            $attrs['duration'] = (int)$state['source']['Duration'];
+        }
+
+        // 2. 获取转码播放流
+        $transcodes = $vodService->getFileTranscode($fileId);
+
+        if (!empty($transcodes)) {
+            $vod->file_transcode = $transcodes;
+            $vod->update();
+            $attrs['file']['status'] = ChapterModel::FS_TRANSLATED;
+            if (empty($attrs['duration']) && !empty($transcodes[0]['duration'])) {
+                $attrs['duration'] = (int)$transcodes[0]['duration'];
+            }
+        } elseif (!empty($attrs['duration'])) {
+            $attrs['file']['status'] = ChapterModel::FS_TRANSLATING;
+        }
+
+        $chapter->attrs = $attrs;
+        $chapter->update();
+
+        $this->updateCourseVodAttrs($chapter->course_id);
     }
 
     protected function handleNewFileUploadEvent($event)

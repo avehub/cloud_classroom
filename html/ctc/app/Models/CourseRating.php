@@ -7,6 +7,14 @@ class CourseRating extends Model
 {
 
     /**
+     * 无有效评价时的默认评分
+     *
+     * 与数据表 kg_course_rating 各评分字段的默认值保持一致，
+     * 避免"没有评价"被当成"0 分"写入或展示。
+     */
+    const DEFAULT_RATING = 5.0;
+
+    /**
      * 课程编号
      *
      * @var int

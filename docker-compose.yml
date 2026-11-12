@@ -50,6 +50,9 @@ services:
       - 9000
     env_file:
       - .env
+    environment:
+      # cron 依据系统时区触发调度，需与应用时区保持一致
+      TZ: ${APP_TIMEZONE:-Asia/Shanghai}
     volumes:
       - ./html:/var/www/html
       - ./php/log:/var/log/php-fpm

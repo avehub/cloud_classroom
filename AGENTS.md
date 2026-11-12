@@ -154,6 +154,9 @@ Agent 在进行任何需求开发、缺陷修复或功能调整时，必须严�
 6. 回退时部署上一个镜像/commit，并在需要时把 `kg_vip.expiry=0` 的永久会员先置为 `published=0`。
 
 7. `reload-prod.sh` / `deploy-prod.sh` 默认校验 `.env` 必填项并拒绝占位符；`reload-prod.sh` 默认拒绝 root。`PREFLIGHT_ONLY=1` 可只做发布前预检；不要在生产用 `ALLOW_ROOT=1` 或 `ALLOW_PLACEHOLDER_ENV=1` 绕过检查。
+8. 容器内 cron 只执行 `/etc/cron.d` 下**属主为 root** 的文件。`php/cron.d/course` 一旦被 `chown` 成普通用户（例如对仓库目录做递归 chown），调度器会**静默失效**：点播时长兜底同步、发货、订单关闭、退款、索引同步等全部停摆，且不会留下任何日志。排查方式：`docker exec ctc-php ls -l /etc/cron.d/course` 应为 `root root`；`reload-prod.sh` / `deploy-prod.sh` 已内置该校验与修正。
+9. PHP 容器时区必须与应用时区一致（`php/Dockerfile` 的 `TZ` 与 compose 的 `TZ: ${APP_TIMEZONE:-Asia/Shanghai}`）。容器为 UTC 时，`daily(3, x)` 之类的任务会整体偏移 8 小时。
+10. 课程评分记录 `kg_course_rating` 与课程一对一，由 `Course::afterCreate()` 创建；缺失会让前台评分显示 0.0。可用 `php console.php maintain repair_course_rating` 批量补齐并清理 `course_id=0` 脏数据。
 
 ---
 

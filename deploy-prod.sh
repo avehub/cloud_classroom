@@ -109,6 +109,9 @@ fix_permissions() {
     "${run[@]}" chmod -R u+rwX,go-rwx mysql/data mysql/log redis/data redis/log 2>/dev/null || true
     "${run[@]}" chmod -R u+rwX,go+rX html/ctc/storage 2>/dev/null || true
     "${run[@]}" chmod -R u+rwX,go+rX nginx/log php/log php/supervisor/log 2>/dev/null || true
+    # cron 只执行 /etc/cron.d 下属主为 root 的文件，属主不对会导致定时任务静默失效
+    "${run[@]}" chown root:root php/cron.d/course 2>/dev/null || true
+    "${run[@]}" chmod 644 php/cron.d/course 2>/dev/null || true
 }
 
 if [ "$(uname -s)" = "Linux" ]; then

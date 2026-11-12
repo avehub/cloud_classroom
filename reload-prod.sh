@@ -62,6 +62,22 @@ else
   warn "ALLOW_PLACEHOLDER_ENV=1，跳过生产配置占位符检查。"
 fi
 
+# cron 只执行 /etc/cron.d 下属主为 root 的文件；属主不对时调度器会静默失效，
+# 表现为点播时长兜底同步、订单关闭、发货、索引同步等全部停摆。
+CRON_FILE="php/cron.d/course"
+if [ -f "${CRON_FILE}" ]; then
+  CRON_UID="$(stat -c '%u' "${CRON_FILE}" 2>/dev/null || stat -f '%u' "${CRON_FILE}" 2>/dev/null || echo unknown)"
+  if [ "${CRON_UID}" != "0" ]; then
+    if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+      sudo chown root:root "${CRON_FILE}"
+      sudo chmod 644 "${CRON_FILE}"
+      info "已把 ${CRON_FILE} 属主修正为 root（否则容器内 cron 会忽略它）。"
+    else
+      die "${CRON_FILE} 属主不是 root，容器内 cron 会静默忽略，定时任务将全部失效。请执行：sudo chown root:root ${CRON_FILE} && sudo chmod 644 ${CRON_FILE}"
+    fi
+  fi
+fi
+
 docker compose config >/dev/null
 
 if [ "${PREFLIGHT_ONLY:-0}" = "1" ]; then
