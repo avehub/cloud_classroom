@@ -13,25 +13,13 @@
     <div class="login-wrap wrap">
         <div class="layui-tabs login-tab">
             <ul class="layui-tabs-header">
+                <li class="layui-this">账号登录</li>
                 {% if oauth_provider.weixin.enabled == 1 %}
-                    <li class="layui-this">微信登录</li>
-                    <li>账号登录</li>
-                {% else %}
-                    <li class="layui-this">账号登录</li>
+                    <li data-login-tab="weixin">微信登录</li>
                 {% endif %}
             </ul>
             <div class="layui-tabs-body">
-                {% if oauth_provider.weixin.enabled == 1 %}
-                    <div class="layui-tabs-item layui-show">
-                        <div class="wechat-login-panel">
-                            <iframe class="qrcode-frame" src="{{ weixin_authorize_url }}" frameborder="0" scrolling="no"></iframe>
-                            <div class="fallback">
-                                <a href="{{ url({'for':'home.oauth.weixin'}) }}">二维码无法显示？点击前往微信登录</a>
-                            </div>
-                        </div>
-                    </div>
-                {% endif %}
-                <div class="layui-tabs-item{% if oauth_provider.weixin.enabled != 1 %} layui-show{% endif %}">
+                <div class="layui-tabs-item layui-show">
                     <div id="verify-login-panel">
                         <div class="auto-register-note">
                             <i class="layui-icon layui-icon-tips"></i>
@@ -53,6 +41,16 @@
                         </div>
                     </div>
                 </div>
+                {% if oauth_provider.weixin.enabled == 1 %}
+                    <div class="layui-tabs-item">
+                        <div class="wechat-login-panel">
+                            <iframe id="weixin-qrcode-frame" class="qrcode-frame" data-src="{{ weixin_authorize_url }}" frameborder="0" scrolling="no"></iframe>
+                            <div class="fallback">
+                                <a href="{{ url({'for':'home.oauth.weixin'}) }}">二维码无法显示？点击前往微信登录</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
             </div>
         </div>
         <div class="agreement-tips">登录即表示同意<a href="{{ terms_url }}" target="_blank">《用户协议》</a>和<a href="{{ privacy_url }}" target="_blank">《隐私政策》</a></div>
@@ -92,6 +90,17 @@
             $('#goto-pwd-login').on('click', function () {
                 $('#verify-login-panel').hide();
                 $('#pwd-login-panel').show();
+            });
+            // 微信登录不再是默认 Tab，二维码 iframe 延迟到首次切换时加载，避免展示已过期的二维码
+            var $qrcodeFrame = $('#weixin-qrcode-frame');
+            $('.login-tab .layui-tabs-header li[data-login-tab="weixin"]').on('click', function () {
+                if ($qrcodeFrame.length === 0 || $qrcodeFrame.attr('src')) {
+                    return;
+                }
+                var src = $qrcodeFrame.attr('data-src');
+                if (src) {
+                    $qrcodeFrame.attr('src', src);
+                }
             });
         });
     </script>
