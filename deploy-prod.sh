@@ -55,7 +55,14 @@ if [ ! -f .env ]; then
         error "缺失 .env.default 模板，无法继续。"
     fi
 fi
-chmod 600 .env 2>/dev/null || true
+# .env 会只读挂载进 php 容器供 cron 任务读取；容器内任务以 www-data(gid 33) 运行
+if [ "$(uname -s)" = "Linux" ]; then
+    chgrp 33 .env 2>/dev/null && chmod 640 .env 2>/dev/null \
+        || { command -v sudo >/dev/null 2>&1 && sudo chgrp 33 .env && sudo chmod 640 .env; } \
+        || warn "无法放开 .env 组读权限，容器内 cron 任务将读不到密钥。"
+else
+    chmod 600 .env 2>/dev/null || true
+fi
 
 APP_KEY="$(get_env APP_KEY)"
 SITE_URL="$(get_env SITE_URL)"

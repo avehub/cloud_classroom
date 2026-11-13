@@ -44,7 +44,25 @@ if [ "${EUID}" -eq 0 ] && [ "${ALLOW_ROOT:-0}" != "1" ]; then
 fi
 
 [ -f .env ] || die "缺少 .env，请先执行：cp .env.default .env 并填写生产配置。"
-chmod 600 .env 2>/dev/null || true
+
+# .env 会以只读方式挂载进 php 容器（/etc/ctc/app.env），供 cron 拉起的任务进程读取密钥：
+# cron 不继承 compose 注入的环境变量，而 config.php 全靠 getenv()。
+# 容器内 cron 任务以 www-data(uid/gid 33) 运行，因此 Linux 上需要放开组读权限；
+# 非 Linux（本地开发）保持 600 即可，Docker Desktop 的挂载不校验属主。
+fix_env_perms() {
+  if [ "$(uname -s)" = "Linux" ]; then
+    if chgrp 33 .env 2>/dev/null && chmod 640 .env 2>/dev/null; then
+      return 0
+    fi
+    if command -v sudo >/dev/null 2>&1 && sudo -n true 2>/dev/null; then
+      sudo chgrp 33 .env && sudo chmod 640 .env && return 0
+    fi
+    warn "无法把 .env 调整为 root:33 / 640；容器内 cron 任务将读不到密钥（Redis NOAUTH）。请手工执行：sudo chgrp 33 .env && sudo chmod 640 .env"
+    return 1
+  fi
+  chmod 600 .env 2>/dev/null || true
+}
+fix_env_perms || true
 command -v docker >/dev/null 2>&1 || die "未安装 Docker。"
 docker compose version >/dev/null 2>&1 || die "未安装 Docker Compose v2 插件。"
 
@@ -174,6 +192,17 @@ else
   else
     warn "缺少 ${RUNTIME_LOCK}，无法比对运行时基线。"
   fi
+fi
+
+echo "==> 4.2 cron 环境自检..."
+# cron 不会把 compose 注入的环境变量传给任务进程，而 config.php 全靠 getenv() 读密钥。
+# 一旦 .env 没挂载或加载失败，所有定时任务都会静默空转（Redis NOAUTH / 数据库拒绝连接），
+# 且只在 storage/log/console-*.log 里留错误，极难发现 —— 这里用最小环境主动验一次。
+if docker compose exec -T -u www-data php env -i PATH=/usr/local/bin:/usr/bin:/bin HOME=/var/www \
+  php -r 'require "/var/www/html/ctc/bootstrap/Helper.php"; kg_load_env_file(); exit(getenv("REDIS_PASSWORD") !== false && getenv("MYSQL_PASSWORD") !== false ? 0 : 1);' >/dev/null 2>&1; then
+  info "最小环境（模拟 cron）下可读取 .env，定时任务认证正常。"
+else
+  die "cron 环境自检失败：最小环境下拿不到 REDIS_PASSWORD / MYSQL_PASSWORD，定时任务会集体失效。请确认 docker-compose.yml 已挂载 ./.env:/etc/ctc/app.env:ro，并已重建 php 容器（docker compose up -d php）。"
 fi
 
 echo "==> 5. Composer 依赖（仅在 composer.json/lock 变化时安装）..."

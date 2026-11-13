@@ -55,6 +55,9 @@ services:
       TZ: ${APP_TIMEZONE:-Asia/Shanghai}
     volumes:
       - ./html:/var/www/html
+      # cron 不继承容器环境变量，PHP 引导阶段从该只读文件兜底加载（见 bootstrap/Helper.php）
+      # 挂在 /etc 下而非 web 目录内，nginx docroot 为 html/ctc/public，无法访问
+      - ./.env:/etc/ctc/app.env:ro
       - ./php/log:/var/log/php-fpm
       - ./php/conf.d/my.ini:/usr/local/etc/php/conf.d/my.ini
       - ./php/conf.d/zz-prod.ini:/usr/local/etc/php/conf.d/zz-prod.ini:ro

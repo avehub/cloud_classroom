@@ -148,7 +148,7 @@ Agent 在进行任何需求开发、缺陷修复或功能调整时，必须严�
 
 1. 生产 PHP 运行镜像已统一为 `php/Dockerfile`（PHP 8.2.35 + Phalcon 5.23），不再使用 `php82/` 灰度目录。
 2. `docker-compose.yml` 的 `php` 服务使用 `build: ./php`，服务名、容器名、端口（9000/8282）保持不变；Nginx 仍使用原服务与 80/443 端口。
-3. 发布统一使用 `./reload-prod.sh`，流程为：预检（`.env` / cron.d 属主 / `docker compose config`）→ `git pull` → **代码权限归一** → **按需**构建 php 镜像 → `up -d php` → **按需** `composer install` → `phinx migrate` → `console.php upgrade`（console 迁移 + 重置 app_info/setting/annotation/metadata/volt/nav 缓存，失败即中止）→ 清理 volt 编译产物 → 重启 FPM/WebSocket → `nginx -t` + `nginx -s reload`（零停机）→ 重建首页缓存 → 健康检查 → 写入 `.last-deployed-commit`。
+3. 发布统一使用 `./reload-prod.sh`，流程为：预检（`.env` / cron.d 属主 / `docker compose config`）→ `git pull` → **代码权限归一** → **按需**构建 php 镜像 → `up -d php` → 运行时版本基线校验（4.1）+ cron 环境自检（4.2）→ **按需** `composer install` → `phinx migrate` → `console.php upgrade`（console 迁移 + 重置 app_info/setting/annotation/metadata/volt/nav 缓存，失败即中止）→ 清理 volt 编译产物 → 重启 FPM/WebSocket → `nginx -t` + `nginx -s reload`（零停机）→ 重建首页缓存 → 健康检查 → 写入 `.last-deployed-commit`。
 4. **增量发布**：脚本用 `.last-deployed-commit` 与 `git diff` 判断输入是否变化。只有 `php/Dockerfile` 变化才重建镜像，只有 `composer.json` / `composer.lock` 变化才重装依赖 —— 因为 `html/`、`php/conf.d/*`、`php/fpm/*`、`php/cron.d/*`、`php/supervisor/conf.d` 全是 bind mount，改它们不需要重建镜像。开关：`REBUILD_PHP=1`、`SKIP_PHP_BUILD=1`、`FORCE_COMPOSER=1`、`SKIP_COMPOSER=1`、`SKIP_GIT_PULL=1`、`PREFLIGHT_ONLY=1`。首次运行（无 `.last-deployed-commit`）按全量处理。
 5. ⚠️ 发布脚本里**禁止 `umask 077`**：`git pull` 用它决定新文件权限，会把 PHP 源码写成 `0600`，而 php-fpm 与容器内 cron 都以 `www-data` 运行 → 页面 500/302、定时任务报 `handler class cannot be loaded`；又因 `opcache.validate_timestamps=0`，故障往往要等到 fpm 重启后才暴露。脚本已在 pull 后做权限归一（`chmod -R a+rX`）兜底，`.env` 用显式 `chmod 600` 保护。**也不要用递归 `chown`/`chmod` 去"修权限"**——那会顺手把 `php/cron.d/course` 的 root 属主改掉（见第 11 条），代价是全部定时任务静默停摆。
 6. `php/Dockerfile` 已锁定运行时版本：`FROM php:8.2.35-fpm-bookworm` + `pecl install psr-1.2.0 redis-6.3.0 igbinary-3.2.16 phalcon-5.23.0`（apt 包与 Debian 基础层仍随 tag 浮动，钉 apt 精确版本会因镜像源轮转导致构建失败，故不钉）。**改动该文件任意一层都会触发扩展重新编译**：Apple Silicon + Rosetta 构建 amd64 实测约 9.3 分钟；生产 2C / 可用内存不足 2G，**禁止在生产直接 `docker compose build`**，改为异地构建后导入：
@@ -165,9 +165,10 @@ Agent 在进行任何需求开发、缺陷修复或功能调整时，必须严�
 9. 回退时部署上一个镜像/commit，并在需要时把 `kg_vip.expiry=0` 的永久会员先置为 `published=0`。镜像回退用构建前自动打的 `ctc/php:rollback-<时间戳>` 标签：`docker tag <rollback-tag> ctc/php:8.2 && docker compose up -d php`。
 10. `reload-prod.sh` / `deploy-prod.sh` 默认校验 `.env` 必填项并拒绝占位符；`reload-prod.sh` 默认拒绝 root。`PREFLIGHT_ONLY=1` 可只做发布前预检；不要在生产用 `ALLOW_ROOT=1` 或 `ALLOW_PLACEHOLDER_ENV=1` 绕过检查。
 11. 容器内 cron 只执行 `/etc/cron.d` 下**属主为 root** 的文件。`php/cron.d/course` 一旦被 `chown` 成普通用户，调度器会**静默失效**：点播时长兜底同步、发货、订单关闭、退款、索引同步等全部停摆，且不留任何日志。排查方式：`docker exec ctc-php ls -l /etc/cron.d/course` 应为 `root root`；`reload-prod.sh` / `deploy-prod.sh` 已内置该校验与修正。
-12. PHP 容器时区必须与应用时区一致（`php/Dockerfile` 末尾的 `ENV TZ` + compose 的 `TZ: ${APP_TIMEZONE:-Asia/Shanghai}`）。容器为 UTC 时，`daily(3, x)` 之类的任务会整体偏移 8 小时。
-13. 课程评分记录 `kg_course_rating` 与课程一对一，由 `Course::afterCreate()` 创建；缺失会让前台评分显示 0.0。可用 `php console.php maintain repair_course_rating` 批量补齐并清理 `course_id=0` 脏数据。
-14. 原「首次 Phalcon 3→5 切换清理 Redis」的一次性逻辑已从 `reload-prod.sh` 移除（生产 `.phalcon5-cutover-done` 标记文件可删除）。清空 Redis 业务库属于高危操作，需要时手工执行并评估影响。
+12. **cron 拿不到容器环境变量**：`config.php` 全部通过 `getenv()` 读取密钥，而 compose 的 `env_file` 只注入到 PID 1（supervisord）及其子进程（php-fpm / websocket）；cron 交给任务的只有最小环境（HOME/LOGNAME/PATH/SHELL），于是**所有定时任务**都会报 `NOAUTH Authentication required` 或数据库拒绝连接，且只在 `storage/log/console-*.log` 里留错误、极难发现。解决方式：`.env` 以只读方式挂载到容器 `/etc/ctc/app.env`（位于 nginx docroot `html/ctc/public` 之外），`bootstrap/Helper.php::kg_load_env_file()` 在引导阶段按需补齐（只填补缺失变量，不覆盖已有环境）。Linux 上 `.env` 必须是 `root:33 / 640`，否则容器内 www-data 读不到 —— `reload-prod.sh` / `deploy-prod.sh` 会自动处理，`reload-prod.sh` 步骤 4.2 还会用 `env -i` 最小环境做一次自检，失败即中止发布。
+13. PHP 容器时区必须与应用时区一致（`php/Dockerfile` 末尾的 `ENV TZ` + compose 的 `TZ: ${APP_TIMEZONE:-Asia/Shanghai}`）。容器为 UTC 时，`daily(3, x)` 之类的任务会整体偏移 8 小时。
+14. 课程评分记录 `kg_course_rating` 与课程一对一，由 `Course::afterCreate()` 创建；缺失会让前台评分显示 0.0。可用 `php console.php maintain repair_course_rating` 批量补齐并清理 `course_id=0` 脏数据。
+15. 原「首次 Phalcon 3→5 切换清理 Redis」的一次性逻辑已从 `reload-prod.sh` 移除（生产 `.phalcon5-cutover-done` 标记文件可删除）。清空 Redis 业务库属于高危操作，需要时手工执行并评估影响。
 
 ## 7. 开源仓库隐私与配置收口
 

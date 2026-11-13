@@ -43,7 +43,10 @@ class TeacherLiveNoticeTask extends Task
 
         $liveIds = $redis->sMembers($keyName);
 
-        if (count($liveIds) == 0) return;
+        /**
+         * Redis 异常（如认证失败）时 sMembers 返回 false，count(false) 在 PHP 8 会抛 TypeError
+         */
+        if (!is_array($liveIds) || count($liveIds) == 0) return;
 
         $liveRepo = new ChapterLiveRepo();
 
